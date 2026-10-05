@@ -1,6 +1,7 @@
 // Entrypoint du content script de l'extension Chrome.
 // Implémenté dans la Tâche 5 (messagerie background ↔ content script).
 import type { AnalysisResult } from "../types/types";
+import { highlightText } from "./highlighter";
 
 const STORAGE_KEY = "textorigin:selection";
 
@@ -47,7 +48,7 @@ async function handlePageAnalysis(): Promise<void> {
   try {
     const result = await analyzeText(text);
     console.log("TextOrigin AI - analyse:", result);
-    // TODO (tâche 9) : injecter les surlignages + panneau latéral
+    highlightText(result.detections);
   } catch (error) {
     console.error("TextOrigin AI - erreur :", error);
   }
