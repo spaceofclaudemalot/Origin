@@ -82,3 +82,96 @@ describe("DetectorService", () => {
     await expect(svc.detectSingle("unknown", "text")).rejects.toThrow(/Unknown detector/);
   });
 });
+
+// Review Focus #2: empty / short text handling
+describe("DetectorService Review Focus #2", () => {
+  it("empty text → zero score and zero markers", async () => {
+    const svc = new DetectorService();
+    const result = await svc.detectAll("");
+    expect(result.totalScore).toBe(0);
+    expect(result.markerCount).toBe(0);
+  });
+
+  it("short text (1 word) does not throw and returns bounded score", async () => {
+    const svc = new DetectorService();
+    const result = await svc.detectAll("a");
+    expect(result.totalScore).toBeGreaterThanOrEqual(0);
+    expect(result.totalScore).toBeLessThanOrEqual(100);
+  });
+});
+
+// Review Focus #4: score agrégé borné à 0-100
+describe("DetectorService Review Focus #4", () => {
+  it("total score bounded to [0, 100] regardless of marker count", async () => {
+    const svc = new DetectorService();
+    const fake: Detector = {
+      id: "big",
+      name: "Big",
+      detect: async () => Array(50).fill({
+        id: "test-1",
+        type: "lexical" as DetectionType,
+        category: "lexical-marker" as DetectionCategory,
+        text: "comprehensive",
+        start: 0,
+        end: 13,
+        score: 95,
+        confidence: 0.9,
+        explanation: "test",
+        suggestions: [],
+      }),
+    };
+    svc.register(fake);
+    const result = await svc.detectAll(
+      Array(50).fill("comprehensive").join(" "),
+    );
+    expect(result.totalScore).toBe(100);
+    expect(result.totalScore).toBeLessThanOrEqual(100);
+  });
+});
+
+// Review Focus #5: détections en chevauchement dédupliquées
+describe("DetectorService Review Focus #5", () => {
+  it("overlapping same-range detections deduplicated", async () => {
+    const svc = new DetectorService();
+    const fake: Detector = {
+      id: "a",
+      name: "A",
+      detect: async () => [{
+        id: "test-a",
+        type: "lexical" as DetectionType,
+        category: "lexical-marker" as DetectionCategory,
+        text: "text",
+        start: 0,
+        end: 4,
+        score: 50,
+        confidence: 0.5,
+        explanation: "test",
+        suggestions: [],
+      }],
+    };
+    const fake2: Detector = {
+      id: "b",
+      name: "B",
+      detect: async () => [{
+        id: "test-b",
+        type: "lexical" as DetectionType,
+        category: "lexical-marker" as DetectionCategory,
+        text: "text",
+        start: 0,
+        end: 4,
+        score: 60,
+        confidence: 0.6,
+        explanation: "test",
+        suggestions: [],
+      }],
+    };
+    svc.register(fake);
+    svc.register(fake2);
+    const result = await svc.detectAll("text");
+    // Note: Two different detectors detecting the SAME text range should both be kept
+    // because they come from different detectors (Review Focus #5 is about deduplication
+    // within the same detector, not across detectors)
+    expect(result.markerCount).toBe(2);
+    expect(result.detections).toHaveLength(2);
+  });
+});

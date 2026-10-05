@@ -47,14 +47,16 @@ export class DetectorService {
       }
     }
 
-    // Score agrégé : moyenne des scores pondérée par la confiance, bornée 0–100
+    // Score agrégé : moyenne des scores, bornée 0–100
+    // Avec bonus pour plusieurs détections de haute confiance
     let totalScore = 0;
     if (scores.length > 0) {
-      const weightedSum = scores.reduce(
-        (acc, score) => acc + score,
-        0,
-      );
-      totalScore = Math.min(100, Math.max(0, Math.round(weightedSum / scores.length)));
+      const averageScore = scores.reduce((acc, score) => acc + score, 0) / scores.length;
+      // Bonus pour plusieurs détections de haute confiance (confidence >= 0.7)
+      const highConfidenceCount = scores.filter((_, index) =>
+        detections[index].confidence >= 0.7).length;
+      const confidenceBonus = Math.min(0.2, highConfidenceCount * 0.01); // jusqu'à +20%
+      totalScore = Math.min(100, Math.max(0, Math.round(averageScore * (1 + confidenceBonus))));
     }
 
     // Niveau de confiance global

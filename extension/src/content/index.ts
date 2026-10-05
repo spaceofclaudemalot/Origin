@@ -37,13 +37,51 @@ async function persistSelection(text: string): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEY]: text });
 }
 
+// Afficher un toast de notification
+function showToast(message: string, type: "info" | "warning" | "error" = "info"): void {
+  // Supprimer les toasts existants
+  document.querySelectorAll('.textorigin-toast').forEach(el => el.remove());
+
+  const toast = document.createElement('div');
+  toast.className = `textorigin-toast fixed bottom-4 right-4 px-4 py-2 rounded-lg text-xs font-medium
+    z-[9999] transition-all duration-300 transform
+    ${type === "error" ? "bg-red-500 bg-opacity-90 text-white" :
+      type === "warning" ? "bg-amber-500 bg-opacity-90 text-white" :
+      "bg-blue-500 bg-opacity-90 text-white"}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  // Animation d'entrée
+  requestAnimationFrame(() => {
+    toast.classList.add('opacity-100', 'translate-y-0');
+  });
+
+  // Auto-suppression après 3 secondes
+  setTimeout(() => {
+    toast.classList.add('opacity-0', '-translate-y-2');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 // Entrée : écouter un click sur le badge / popup, lancer l'analyse
 async function handlePageAnalysis(): Promise<void> {
   const text = getSelectedText();
+
+  // Gestion du texte vide ou trop court
   if (!text) {
-    // texte vide → afficher message d'erreur poli (section 13 du cahier)
+    showToast("Veuillez sélectionner du texte à analyser", "warning");
     return;
   }
+
+  if (text.trim().split(/\s+/).filter(Boolean).length === 0) {
+    showToast("Veuillez sélectionner du texte valide", "warning");
+    return;
+  }
+
+  if (text.trim().split(/\s+/).filter(Boolean).length === 1) {
+    showToast("Analyse d'un mot unique - résultat limité", "info");
+  }
+
   await persistSelection(text);
   try {
     const result = await analyzeText(text);
@@ -51,6 +89,7 @@ async function handlePageAnalysis(): Promise<void> {
     highlightText(result.detections);
   } catch (error) {
     console.error("TextOrigin AI - erreur :", error);
+    showToast("Erreur lors de l'analyse", "error");
   }
 }
 
