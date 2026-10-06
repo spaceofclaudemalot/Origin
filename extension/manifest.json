@@ -3,7 +3,7 @@
   "name": "TextOrigin AI",
   "version": "0.1.0",
   "description": "Identifiez les marqueurs stylistiques des textes générés par l'IA",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
   "action": {
     "default_popup": "src/popup/index.html",
     "default_title": "TextOrigin AI"

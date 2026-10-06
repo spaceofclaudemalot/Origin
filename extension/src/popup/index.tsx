@@ -41,22 +41,27 @@ const App: React.FC = () => {
   };
 
   const handleAnalyze = async () => {
-    // On essaie d'abord de récupérer la sélection depuis la page via le content script
     let text = window.getSelection()?.toString() ?? "";
+    console.log('handleAnalyze: popup selection =', text);
     if (!text.trim()) {
       try {
         const tabs = await chrome.tabs.query({active: true, currentWindow: true});
+        console.log('handleAnalyze: tabs =', tabs);
         const tabId = tabs[0]?.id;
         if (tabId != null) {
           const res: any = await new Promise((resolve) => {
-            chrome.tabs.sendMessage(tabId, {type: "GET_PAGE_SELECTION"}, (r) => resolve(r));
+            chrome.tabs.sendMessage(tabId, {type: "GET_PAGE_SELECTION"}, (r) => {
+              console.log('handleAnalyze: content script response =', r);
+              resolve(r);
+            });
           });
           if (res?.text) text = res.text;
         }
-      } catch {
-        // on garde la sélection du popup si la communication échoue
+      } catch (e) {
+        console.error('handleAnalyze: error requesting page selection =', e);
       }
     }
+    console.log('handleAnalyze: final text =', text);
     if (!text.trim()) {
       setError("Veuillez sélectionner du texte sur la page.");
       return;

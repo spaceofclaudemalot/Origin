@@ -1,5 +1,6 @@
 // Entrypoint du content script de l'extension Chrome.
 // Implémenté dans la Tâche 5 (messagerie background ↔ content script).
+console.log('TextOrigin AI content script loaded');
 import type { AnalysisResult } from "../types/types";
 import { highlightText } from "./highlighter";
 
