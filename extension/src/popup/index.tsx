@@ -40,13 +40,28 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAnalyze = () => {
-    const selection = window.getSelection()?.toString() ?? "";
-    if (!selection.trim()) {
+  const handleAnalyze = async () => {
+    // On essaie d'abord de récupérer la sélection depuis la page via le content script
+    let text = window.getSelection()?.toString() ?? "";
+    if (!text.trim()) {
+      try {
+        const tabs = await chrome.tabs.query({active: true, currentWindow: true});
+        const tabId = tabs[0]?.id;
+        if (tabId != null) {
+          const res: any = await new Promise((resolve) => {
+            chrome.tabs.sendMessage(tabId, {type: "GET_PAGE_SELECTION"}, (r) => resolve(r));
+          });
+          if (res?.text) text = res.text;
+        }
+      } catch {
+        // on garde la sélection du popup si la communication échoue
+      }
+    }
+    if (!text.trim()) {
       setError("Veuillez sélectionner du texte sur la page.");
       return;
     }
-    analyze(selection);
+    analyze(text);
   };
 
   const scoreColor = (score: number) =>

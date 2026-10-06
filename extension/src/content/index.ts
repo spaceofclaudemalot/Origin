@@ -118,4 +118,13 @@ function createFloatingButton(): void {
 }
 
 createFloatingButton();
+
+// Répondre au popup qui demande la sélection de la page
+chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse: any) => {
+  if (message.type === "GET_PAGE_SELECTION") {
+    const text = getSelectedText();
+    sendResponse({text: text ?? ""});
+    return false;
+  }
+});
 export {};

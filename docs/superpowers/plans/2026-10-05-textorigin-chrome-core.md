@@ -4,7 +4,7 @@
 
 **Objectif :** Créer un MVP d'extension Chrome (Manifest V3) capable de détecter des marqueurs lexicaux et stylistiques dans un texte sélectionné, de le surligner et d'afficher des explications.
 
-**Architecture :** Flux de données à trois niveaux : le *content script* capture la sélection et affiche les surlignages, le *background service worker* orchestre l'analyse, et des *modules de détection* indépendants (interface `Detector`) produisent des résultats normalisés. Le *popup React* affiche le score et l'historique.
+**Architecture :** Flux de données à trois niveaux : le _content script_ capture la sélection et affiche les surlignages, le _background service worker_ orchestre l'analyse, et des _modules de détection_ indépendants (interface `Detector`) produisent des résultats normalisés. Le _popup React_ affiche le score et l'historique.
 
 **Stack technique :** Chrome Extension Manifest V3 · React 19 · TypeScript · Vite · Tailwind CSS · Chrome Storage API · Chrome Runtime messaging.
 
@@ -18,7 +18,7 @@
 - UI : **React**, **TypeScript**, **Vite**, **Tailwind CSS**.
 - Couleurs : bleu profond/indigo (primaire), violet (secondaire), vert (naturel/faible risque), orange (vérification), rouge (alerte forte), fond clair + **dark mode**.
 - Formulation obligatoire : « marqueurs stylistiques **fréquemment observés dans des textes générés par des LLM** » — jamais « ce texte a été généré par l'IA ».
-- **AI Marker Score** : 0–100, toujours présenté comme un *score de présence de marqueurs*, jamais comme une probabilité d'origine.
+- **AI Marker Score** : 0–100, toujours présenté comme un _score de présence de marqueurs_, jamais comme une probabilité d'origine.
 - Support initial : **Français** et **Anglais**.
 - **Traitement local** pour les détections simples ; aucun envoi de données hors navigateur sans action explicite de l'utilisateur.
 - Jamais de `TODO`, `TBD` ou fonctionnalité simulée silencieusement — si une fonction est absente, l'interface doit l'indiquer clairement (ex. : « fonction à connecter »).
@@ -36,6 +36,7 @@
 ## Task 1 : Squelette du projet
 
 **Files :**
+
 - Create: `extension/package.json`
 - Create: `extension/tsconfig.json`
 - Create: `extension/vite.config.ts`
@@ -54,6 +55,7 @@
 - Test: `extension/src/detectors/lexical.test.ts`
 
 **Interfaces :**
+
 - Produites par cette tâche : structure de build (`npm run build`, `npm run dev`), entrypoints (`./src/background`, `./src/content`, `./src/popup`), variables d'import globales (`import.meta.env`, `process.env`), styles globaux, declaration `chrome` (via `@types/chrome`).
 
 - [ ] **Step 1 : Initialiser le dossier et `package.json`**
@@ -277,9 +279,11 @@ git commit -m "chore: scaffold extension project (Vite + React + TS + Tailwind +
 ## Task 2 : Modèles de données partagés
 
 **Files :**
+
 - Create: `extension/src/types/types.ts`
 
 **Interfaces :**
+
 - Consommées : aucune.
 - Produites (utilisées par les tâches 3 à 9) : `Detection`, `Suggestion`, `DetectionType`, `DetectionCategory`, `AnalysisResult`, `Detector`.
 
@@ -288,11 +292,11 @@ git commit -m "chore: scaffold extension project (Vite + React + TS + Tailwind +
 ```ts
 /** Catégories de détections du cahier des charges (section 216) */
 export type DetectionCategory =
-  | "lexical-marker"       // mot/terme caractéristique
-  | "discourse-structure"  // structure de phrase (ex. « Ce n'est pas seulement X, c'est Y »)
-  | "transition"           // connecteur excessif
-  | "style-regularity"     // régularité / longueur de phrase / homogénéité
-  | "anomaly"              // formulation inhabituelle
+  | "lexical-marker" // mot/terme caractéristique
+  | "discourse-structure" // structure de phrase (ex. « Ce n'est pas seulement X, c'est Y »)
+  | "transition" // connecteur excessif
+  | "style-regularity" // régularité / longueur de phrase / homogénéité
+  | "anomaly"; // formulation inhabituelle
 
 /** Types de détecteurs (module 1-4 du cahier des charges) */
 export type DetectionType =
@@ -304,8 +308,8 @@ export type DetectionType =
 export interface Suggestion {
   /** 'replace' | 'remove' | 'rewrite' | 'custom' */
   type: string;
-  text: string;         // texte substitut (vide pour 'remove')
-  reason: string;       // pourquoi cette suggestion
+  text: string; // texte substitut (vide pour 'remove')
+  reason: string; // pourquoi cette suggestion
 }
 
 /** Une détection élémentaire, format standardisé (section 10 du cahier) */
@@ -333,7 +337,7 @@ export interface AnalysisResult {
   /** AI Marker Score — 0 à 100 (jamais présenté comme une probabilité) */
   totalScore: number;
   /** confiance globale du moteur */
-  confidence: string;   // 'low' | 'medium' | 'high'
+  confidence: string; // 'low' | 'medium' | 'high'
   markerCount: number;
   /** compte par catégorie */
   categories: Record<DetectionCategory, number>;
@@ -367,10 +371,10 @@ import type {
 } from "./types";
 
 const goodCategory: DetectionCategory = "lexical-marker"; // compile
-const badCategory: DetectionCategory = "invalid";         // TS error
+const badCategory: DetectionCategory = "invalid"; // TS error
 
-const goodType: DetectionType = "lexical";                // compile
-const badType: DetectionType = "unknown";                 // TS error
+const goodType: DetectionType = "lexical"; // compile
+const badType: DetectionType = "unknown"; // TS error
 
 const exampleDetection: Detection = {
   id: "d1",
@@ -406,9 +410,11 @@ git commit -m "feat(types): add shared Detection / AnalysisResult / Detector mod
 ## Task 3 : Registry de détecteurs (`DetectorService`)
 
 **Files :**
+
 - Create: `extension/src/services/detector.ts`
 
 **Interfaces :**
+
 - Consommées : `Detection`, `AnalysisResult`, `Detector` de `src/types/types.ts`.
 - Produites : `DetectorService` avec `register(detector: Detector): void`, `detectAll(text: string): Promise<AnalysisResult>`, `detectSingle(name: string, text: string): Promise<Detection[]>`, `getRegisteredIds(): string[]`.
 
@@ -422,18 +428,20 @@ class FakeDetector implements Detector {
   id = "fake";
   name = "Fake";
   async detect(text: string): Promise<Detection[]> {
-    return [{
-      id: "x1",
-      type: "lexical" as any,
-      category: "lexical-marker" as any,
-      text: text,
-      start: 0,
-      end: text.length,
-      score: 90,
-      confidence: 0.9,
-      explanation: "fake",
-      suggestions: [],
-    }];
+    return [
+      {
+        id: "x1",
+        type: "lexical" as any,
+        category: "lexical-marker" as any,
+        text: text,
+        start: 0,
+        end: text.length,
+        score: 90,
+        confidence: 0.9,
+        explanation: "fake",
+        suggestions: [],
+      },
+    ];
   }
 }
 
@@ -459,8 +467,22 @@ suite("DetectorService", () => {
     const svc = new DetectorService();
     svc.register(new FakeDetector());
     const others = {
-      id: "other", name: "Other",
-      detect: async () => [{ id: "o1", type: "lexical" as any, category: "lexical-marker" as any, text: "x", start: 0, end: 1, score: 10, confidence: 0.3, explanation: "o", suggestions: [] }],
+      id: "other",
+      name: "Other",
+      detect: async () => [
+        {
+          id: "o1",
+          type: "lexical" as any,
+          category: "lexical-marker" as any,
+          text: "x",
+          start: 0,
+          end: 1,
+          score: 10,
+          confidence: 0.3,
+          explanation: "o",
+          suggestions: [],
+        },
+      ],
     } as Detector;
     svc.register(others);
     const results = await svc.detectSingle("fake", "test");
@@ -490,7 +512,9 @@ export class DetectorService {
 
   register(detector: Detector): void {
     if (this.detectors.has(detector.id)) {
-      throw new Error(`Detector with id "${detector.id}" is already registered`);
+      throw new Error(
+        `Detector with id "${detector.id}" is already registered`,
+      );
     }
     this.detectors.set(detector.id, detector);
   }
@@ -512,9 +536,9 @@ export class DetectorService {
     const categories: Record<DetectionCategory, number> = {
       "lexical-marker": 0,
       "discourse-structure": 0,
-      "transition": 0,
+      transition: 0,
       "style-regularity": 0,
-      "anomaly": 0,
+      anomaly: 0,
     };
     const scores: number[] = [];
 
@@ -530,17 +554,19 @@ export class DetectorService {
     // Score agrégé : moyenne des scores pondérée par la confiance, bornée 0–100
     let totalScore = 0;
     if (scores.length > 0) {
-      const weightedSum = scores.reduce(
-        (acc, score) => acc + score,
-        0,
+      const weightedSum = scores.reduce((acc, score) => acc + score, 0);
+      totalScore = Math.min(
+        100,
+        Math.max(0, Math.round(weightedSum / scores.length)),
       );
-      totalScore = Math.min(100, Math.max(0, Math.round(weightedSum / scores.length)));
     }
 
     // Niveau de confiance global
     let confidence: "low" | "medium" | "high" = "low";
     if (detections.length >= 3) {
-      confidence = detections.every((d) => d.confidence >= 0.7) ? "high" : "medium";
+      confidence = detections.every((d) => d.confidence >= 0.7)
+        ? "high"
+        : "medium";
     } else if (detections.length > 0) {
       confidence = detections[0].confidence >= 0.7 ? "medium" : "low";
     }
@@ -574,11 +600,13 @@ git commit -m "feat(detection): add DetectorService registry with detectAll / de
 ## Task 4 : Détecteur lexical + données
 
 **Files :**
+
 - Create: `extension/src/detectors/lexical-data.ts`
 - Create: `extension/src/detectors/lexical.ts`
 - Test: `extension/src/detectors/lexical.test.ts`
 
 **Interfaces :**
+
 - Consommées : `Detector`, `Detection`, `DetectionCategory`, `DetectionType` de `src/types/types.ts`.
 - Produites : `LexicalDetector implements Detector` avec les `id = "lexical"` et `name = "Lexical Detector"`.
 
@@ -806,7 +834,13 @@ export const LEXICAL_ENTRIES: LexicalEntry[] = [
 - [ ] **Step 2 : Implémenter le détecteur `lexical.ts`**
 
 ```ts
-import type { Detection, DetectionCategory, DetectionType, Detector, Suggestion } from "../types/types";
+import type {
+  Detection,
+  DetectionCategory,
+  DetectionType,
+  Detector,
+  Suggestion,
+} from "../types/types";
 import { LEXICAL_ENTRIES } from "./lexical-data";
 
 /** Détection basée sur une base de termes et expressions (module 1 du cahier des charges).
@@ -829,7 +863,10 @@ export class LexicalDetector implements Detector {
       }
       const escaped = entry.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       // séparateurs de mot larges : début/fin de texte, espaces, ponctuation, sauts de ligne
-      const regex = new RegExp(`(?<=^|(?=[\\s.,;:!?'"()\\[\\]{}—–—])\\b${escaped}\\b(?=[\\s.,;:!?'"()\\[\\]{}—–—]|$)`, "gi");
+      const regex = new RegExp(
+        `(?<=^|(?=[\\s.,;:!?'"()\\[\\]{}—–—])\\b${escaped}\\b(?=[\\s.,;:!?'"()\\[\\]{}—–—]|$)`,
+        "gi",
+      );
       let m: RegExpExecArray | null;
       while ((m = regex.exec(lower)) !== null) {
         const key = `${m.index}-${m.index + m[0].length}`;
@@ -862,18 +899,30 @@ export class LexicalDetector implements Detector {
   private calculateScore(entry: { confidence: number }, text: string): number {
     // score = confiance pondérée par la fréquence relative du terme dans le texte
     const lower = text.toLowerCase();
-    const occurrences = (lower.match(new RegExp(entry.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi")) || []).length;
+    const occurrences = (
+      lower.match(
+        new RegExp(entry.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+      ) || []
+    ).length;
     const frequencyFactor = 1 + Math.min(0.3, (occurrences - 1) * 0.1); // bonus faible pour répétition
     return Math.min(100, Math.round(entry.confidence * 100 * frequencyFactor));
   }
 
-  private makeExplanation(entry: { term: string; language: string; category: DetectionCategory }, matched: string): string {
+  private makeExplanation(
+    entry: { term: string; language: string; category: DetectionCategory },
+    matched: string,
+  ): string {
     const categoryText: Record<DetectionCategory, string> = {
-      "lexical-marker": "terme fréquemment observé dans des textes générés par des LLM",
-      "discourse-structure": "structure discursive stéréotypée souvent observée dans des textes générés par des LLM",
-      "transition": "connecteur souvent utilisé de manière excessive dans des textes générés par des LLM",
-      "style-regularity": "régularité stylistique observée dans des textes générés par des LLM",
-      "anomaly": "formulation inhabituelle observée dans des textes générés par des LLM",
+      "lexical-marker":
+        "terme fréquemment observé dans des textes générés par des LLM",
+      "discourse-structure":
+        "structure discursive stéréotypée souvent observée dans des textes générés par des LLM",
+      transition:
+        "connecteur souvent utilisé de manière excessive dans des textes générés par des LLM",
+      "style-regularity":
+        "régularité stylistique observée dans des textes générés par des LLM",
+      anomaly:
+        "formulation inhabituelle observée dans des textes générés par des LLM",
     };
     return `Le terme « ${matched} » est ${categoryText[entry.category]}.`;
   }
@@ -889,18 +938,24 @@ suite("LexicalDetector", () => {
   const det = new LexicalDetector();
 
   test("detects known lexical markers", async () => {
-    const result = await det.detect("Furthermore, this approach is comprehensive.");
+    const result = await det.detect(
+      "Furthermore, this approach is comprehensive.",
+    );
     assert.lengthOf(result, 2);
   });
 
   test("no false positives for substring words", async () => {
     // 'delve' ne doit PAS matcher à l'intérieur de 'délivrer' ou 'développer'
-    const result = await det.detect("Ceci n'est pas un développement de la solution.");
+    const result = await det.detect(
+      "Ceci n'est pas un développement de la solution.",
+    );
     assert.lengthOf(result, 0);
   });
 
   test("no false positives for short substring matches", async () => {
-    const result = await det.detect("The underscores in this code need fixing.");
+    const result = await det.detect(
+      "The underscores in this code need fixing.",
+    );
     assert.lengthOf(result, 1);
   });
 
@@ -936,7 +991,9 @@ suite("LexicalDetector", () => {
 
   test("suggestions non empty for markers with replacements", async () => {
     const result = await det.detect("comprehensive solution");
-    assert.ok(result.every((d) => d.suggestions.length > 0 || d.type === "connector"));
+    assert.ok(
+      result.every((d) => d.suggestions.length > 0 || d.type === "connector"),
+    );
   });
 });
 ```
@@ -967,11 +1024,13 @@ git commit -m "feat(detection): add LexicalDetector with bilingual (EN/FR) marke
 ## Task 5 : Canal de messagerie background ↔ content script
 
 **Files :**
+
 - Modify: `extension/src/background/index.ts`
 - Modify: `extension/src/content/index.ts`
 - Test: `extension/src/content/handlers.test.ts`
 
 **Interfaces :**
+
 - Consommées : `DetectorService`, `Detector`, `AnalysisResult` (task 3).
 - Produites : messages `ANALYZE_TEXT` / `ANALYSIS_READY` avec payloads typed.
 
@@ -985,17 +1044,17 @@ import type { AnalysisResult } from "./types/types";
 const service = new DetectorService();
 service.register(new LexicalDetector());
 
-chrome.runtime.onMessage.addListener(
-  (message, sender, sendResponse) => {
-    if (message.type === "ANALYZE_TEXT" && message.text) {
-      service
-        .detectAll(message.text)
-        .then((result) => sendResponse({ type: "ANALYSIS_READY", result }))
-        .catch((error) => sendResponse({ type: "ANALYSIS_ERROR", error: error.message }));
-      return true; // message asynchrone
-    }
-  },
-);
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "ANALYZE_TEXT" && message.text) {
+    service
+      .detectAll(message.text)
+      .then((result) => sendResponse({ type: "ANALYSIS_READY", result }))
+      .catch((error) =>
+        sendResponse({ type: "ANALYSIS_ERROR", error: error.message }),
+      );
+    return true; // message asynchrone
+  }
+});
 ```
 
 - [ ] **Step 2 : Implémenter le content script (`content/index.ts`)**
@@ -1015,20 +1074,17 @@ function getSelectedText(): string | null {
 // Envoyer l'analyse vers le background
 async function analyzeText(text: string): Promise<AnalysisResult> {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
-      { type: "ANALYZE_TEXT", text },
-      (response) => {
-        if (!response) {
-          reject(new Error("Réponse vide du service background."));
-          return;
-        }
-        if (response.type === "ANALYSIS_READY") {
-          resolve(response.result);
-        } else {
-          reject(new Error(response.error || "Erreur d'analyse."));
-        }
-      },
-    );
+    chrome.runtime.sendMessage({ type: "ANALYZE_TEXT", text }, (response) => {
+      if (!response) {
+        reject(new Error("Réponse vide du service background."));
+        return;
+      }
+      if (response.type === "ANALYSIS_READY") {
+        resolve(response.result);
+      } else {
+        reject(new Error(response.error || "Erreur d'analyse."));
+      }
+    });
   });
 }
 
@@ -1120,11 +1176,13 @@ git commit -m "feat(messaging): add content<->background ANALYZE_TEXT / ANALYSIS
 ## Task 6 : Popup React (dashboard compact)
 
 **Files :**
+
 - Modify: `extension/src/popup/index.tsx`
 - Modify: `extension/src/popup/index.html`
 - Test: `extension/src/popup/ScoreCard.test.tsx` (optionnel — test d'intégration manuelle)
 
 **Interfaces :**
+
 - Consommées : `AnalysisResult` de `src/types/types.ts`.
 - Produites : interface UI popup avec logo, score circulaire 0–100, nombre de marqueurs, bouton « Analyze », résumé.
 
@@ -1174,10 +1232,13 @@ const App: React.FC = () => {
     setError(null);
     try {
       const res = await new Promise<AnalysisResult>((resolve, reject) => {
-        chrome.runtime.sendMessage({ type: "ANALYZE_TEXT", text }, (response) => {
-          if (response?.type === "ANALYSIS_READY") resolve(response.result);
-          else reject(new Error(response?.error || "Analyse échouée."));
-        });
+        chrome.runtime.sendMessage(
+          { type: "ANALYZE_TEXT", text },
+          (response) => {
+            if (response?.type === "ANALYSIS_READY") resolve(response.result);
+            else reject(new Error(response?.error || "Analyse échouée."));
+          },
+        );
       });
       setResult(res);
     } catch (e) {
@@ -1197,16 +1258,35 @@ const App: React.FC = () => {
   };
 
   const scoreColor = (score: number) =>
-    score < 21 ? "text-natural-500" : score < 41 ? "text-primary-500" : score < 61 ? "text-verify-500" : "text-alert-500";
+    score < 21
+      ? "text-natural-500"
+      : score < 41
+        ? "text-primary-500"
+        : score < 61
+          ? "text-verify-500"
+          : "text-alert-500";
 
   return (
     <div className="min-h-[320px] w-80 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 font-sans">
       <header className="flex items-center gap-2 mb-4">
-        <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          <path strokeWidth="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        <svg
+          className="w-8 h-8 text-primary-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeWidth="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+          <path
+            strokeWidth="2"
+            d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+          />
         </svg>
-        <h1 className="text-lg font-bold text-primary-700 dark:text-primary-400">TextOrigin AI</h1>
+        <h1 className="text-lg font-bold text-primary-700 dark:text-primary-400">
+          TextOrigin AI
+        </h1>
       </header>
 
       <div className="space-y-4">
@@ -1218,15 +1298,25 @@ const App: React.FC = () => {
           {loading ? "Analyse en cours..." : "Analyze"}
         </button>
 
-        {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Analyse en cours...</p>}
+        {loading && (
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Analyse en cours...
+          </p>
+        )}
 
         {error && <p className="text-sm text-alert-500">{error}</p>}
 
         {result && (
           <div className="border rounded-lg p-4 dark:border-gray-700">
             <div className="text-center mb-3">
-              <div className={`text-4xl font-bold ${scoreColor(result.totalScore)}`}>{result.totalScore}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">AI Marker Score</div>
+              <div
+                className={`text-4xl font-bold ${scoreColor(result.totalScore)}`}
+              >
+                {result.totalScore}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                AI Marker Score
+              </div>
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -1235,10 +1325,13 @@ const App: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span>Confiance</span>
-                <span className="font-medium capitalize">{result.confidence}</span>
+                <span className="font-medium capitalize">
+                  {result.confidence}
+                </span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-                Score de présence de marqueurs stylistiques fréquemment observés dans des textes générés par des LLM.
+                Score de présence de marqueurs stylistiques fréquemment observés
+                dans des textes générés par des LLM.
               </p>
             </div>
           </div>
@@ -1273,11 +1366,13 @@ git commit -m "feat(popup): add React popup with AI Marker Score, marker count, 
 ## Task 7 : Surlignage et tooltip dans la page
 
 **Files :**
+
 - Create: `extension/src/content/highlighter.ts`
 - Create: `extension/src/content/styles.css`
 - Modify: `extension/src/content/index.ts` (appeler highlighter après analyse)
 
 **Interfaces :**
+
 - Consommées : `Detection[]`, `AnalysisResult` (task 6).
 - Produites : marqueurs surlignés avec classes de couleur (jaune orange rouge pour niveau, violet structure, bleu statistique) + tooltip d'explication.
 
@@ -1289,18 +1384,21 @@ import type { Detection, DetectionCategory } from "../types/types";
 const COLOR_MAP: Record<DetectionCategory, string> = {
   "lexical-marker": "bg-highlight-orange", // moyen
   "discourse-structure": "bg-highlight-purple", // structure stylistique
-  "transition": "bg-highlight-orange",
+  transition: "bg-highlight-orange",
   "style-regularity": "bg-highlight-blue", // statistique
-  "anomaly": "bg-highlight-yellow", // faible
+  anomaly: "bg-highlight-yellow", // faible
 };
 
 export interface HighlightOptions {
   overlay?: boolean; // panneau latéral de droite (écran d'analyse en deux colonnes)
 }
 
-export function highlightText(detections: Detection[], options: HighlightOptions = {}): void {
+export function highlightText(
+  detections: Detection[],
+  options: HighlightOptions = {},
+): void {
   // Nettoyer d'abord les anciens marqueurs (re-analyse)
-  document.querySelectorAll('[data-textorigin-marker]').forEach((el) => {
+  document.querySelectorAll("[data-textorigin-marker]").forEach((el) => {
     const parent = el.parentNode!;
     parent.replaceChild(el, el);
   });
@@ -1314,7 +1412,11 @@ export function highlightText(detections: Detection[], options: HighlightOptions
   const container = document.querySelector("body")!;
 
   // Construction d'un arbre de nœuds texte + marqueurs
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    null,
+  );
   const textNodes: Text[] = [];
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
@@ -1322,10 +1424,19 @@ export function highlightText(detections: Detection[], options: HighlightOptions
   }
 
   // Attribution de chaque détection au nœud texte qui la contient
-  const placements: Array<{ node: Text; start: number; end: number; detection: Detection }> = [];
+  const placements: Array<{
+    node: Text;
+    start: number;
+    end: number;
+    detection: Detection;
+  }> = [];
   for (const d of sorted) {
     for (const node of textNodes) {
-      if (node.textContent && node.textContent.length > d.start && node.textContent.indexOf(d.text, d.start) === d.start) {
+      if (
+        node.textContent &&
+        node.textContent.length > d.start &&
+        node.textContent.indexOf(d.text, d.start) === d.start
+      ) {
         placements.push({ node, start: d.start, end: d.end, detection: d });
       }
     }
@@ -1361,9 +1472,9 @@ function showTooltip(anchor: HTMLSpanElement, detection: any): void {
   const catLabel: Record<string, string> = {
     "lexical-marker": "Marqueur lexical",
     "discourse-structure": "Structure discursive",
-    "transition": "Connecteur excessif",
+    transition: "Connecteur excessif",
     "style-regularity": "Régularité stylistique",
-    "anomaly": "Anomalie stylistique",
+    anomaly: "Anomalie stylistique",
   };
   tooltip.innerHTML = `
     <div class="font-semibold mb-1">Marqueur détecté</div>
@@ -1408,11 +1519,13 @@ git commit -m "feat(content): add DOM highlighter + explanation tooltip with col
 ## Task 8 : Règles globales — score borné, feedback utilisateur, états d'erreur
 
 **Files :**
+
 - Modify: `extension/src/services/detector.ts` (s'assurer `totalScore` borné 0–100)
 - Modify: `extension/src/content/index.ts` (message poli pour texte vide / court)
 - Test: `extension/src/services/detector.test.ts` (tests Review Focus #2, #4, #5)
 
 **Interfaces :**
+
 - Consommées : `Detection[]` de chaque détecteur.
 - Produites : `AnalysisResult` avec `totalScore` ∈ [0, 100], `confidence` ∈ {low, medium, high}, `markerCount` ∈ ℕ.
 
@@ -1420,14 +1533,24 @@ git commit -m "feat(content): add DOM highlighter + explanation tooltip with col
 
 ```ts
 import { DetectorService } from "./detector";
-import type { Detector, Detection, DetectionCategory, DetectionType } from "../types/types";
+import type {
+  Detector,
+  Detection,
+  DetectionCategory,
+  DetectionType,
+} from "../types/types";
 
 const mk = (text: string, score: number, conf: number): Detection => ({
   id: crypto.randomUUID(),
   type: "lexical" as DetectionType,
   category: "lexical-marker" as DetectionCategory,
-  text, start: 0, end: text.length, score, confidence: conf,
-  explanation: "test", suggestions: [],
+  text,
+  start: 0,
+  end: text.length,
+  score,
+  confidence: conf,
+  explanation: "test",
+  suggestions: [],
 });
 
 suite("Aggregate & edge cases", () => {
@@ -1447,11 +1570,14 @@ suite("Aggregate & edge cases", () => {
   test("total score bounded to [0, 100] regardless of marker count", async () => {
     const svc = new DetectorService();
     const fake: Detector = {
-      id: "big", name: "Big",
+      id: "big",
+      name: "Big",
       detect: async () => Array(50).fill(mk("comprehensive", 95, 0.9)),
     };
     svc.register(fake);
-    const result = await svc.detectAll(Array(50).fill("comprehensive").join(" "));
+    const result = await svc.detectAll(
+      Array(50).fill("comprehensive").join(" "),
+    );
     assert.strictEqual(result.totalScore, 100);
     assert.ok(result.totalScore <= 100);
   });
@@ -1459,11 +1585,13 @@ suite("Aggregate & edge cases", () => {
   test("overlapping same-range detections deduplicated", async () => {
     const svc = new DetectorService();
     const fake: Detector = {
-      id: "a", name: "A",
+      id: "a",
+      name: "A",
       detect: async () => [mk("text", 50, 0.5)],
     };
     const fake2: Detector = {
-      id: "b", name: "B",
+      id: "b",
+      name: "B",
       detect: async () => [mk("text", 60, 0.6)],
     };
     svc.register(fake);
@@ -1479,11 +1607,17 @@ suite("Aggregate & edge cases", () => {
 ```ts
 if (!text.trim()) {
   // Feedback utilisateur poli (section 13)
-  chrome.runtime.sendMessage({ type: "SHOW_TOAST", message: "Veuillez sélectionner du texte à analyser." });
+  chrome.runtime.sendMessage({
+    type: "SHOW_TOAST",
+    message: "Veuillez sélectionner du texte à analyser.",
+  });
   return;
 }
 if (text.length < 20) {
-  chrome.runtime.sendMessage({ type: "SHOW_TOAST", message: "Texte trop court pour une analyse fiable (min. 20 caractères)." });
+  chrome.runtime.sendMessage({
+    type: "SHOW_TOAST",
+    message: "Texte trop court pour une analyse fiable (min. 20 caractères).",
+  });
 }
 ```
 
@@ -1501,10 +1635,12 @@ git commit -m "feat(detection): bounded score [0,100], empty/short text handling
 ## Task 9 : Tests unitaires finaux + vérification extension complète
 
 **Files :**
+
 - Modify: `extension/src/detectors/lexical.test.ts` (s'assurer 100 % de couverture des Review Focus #1, #3)
 - Create: `extension/e2e-manual-test.md` (guide de test manuel)
 
 **Interfaces :**
+
 - Consommées : tout le projet.
 - Produites : suite de tests fonctionnelle, procédure de test manuelle pour le bundle produit.
 

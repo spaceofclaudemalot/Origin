@@ -14,14 +14,13 @@
     "128": "public/icon128.png"
   },
   "background": {
-    "service_worker": "src/background/index.ts",
+    "service_worker": "assets/background.js",
     "type": "module"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/content/index.ts"],
-      "css": ["src/styles/global.css"],
+      "js": ["assets/content.js"],
       "run_at": "document_end"
     }
   ]

@@ -1,5 +1,6 @@
-import type { Detection, DetectionCategory, DetectionType, Detector, Suggestion } from "../types/types";
+import type { Detection, DetectionCategory, Detector } from "../types/types";
 import { LEXICAL_ENTRIES } from "./lexical-data";
+import type { LexicalEntry } from "./lexical-data";
 
 /**
  * Détection basée sur une base de termes et expressions (module 1 du cahier des charges).
@@ -23,8 +24,9 @@ export class LexicalDetector implements Detector {
       const escaped = entry.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       // Use word boundaries to match terms as whole words (avoid substring matches)
       const regex = new RegExp(`\\b${escaped}\\b`, "gi");
-      let m: RegExpExecArray | null;
-      while ((m = regex.exec(lower)) !== null) {
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(lower)) !== null) {
+        const m = match; // Non-null within the loop body
         const key = `${m.index}-${m.index + m[0].length}`;
         if (matches.has(key)) {
           continue; // déduplication des chevauchements (Review Focus #5)
@@ -52,10 +54,14 @@ export class LexicalDetector implements Detector {
     return Array.from(matches.values());
   }
 
-  private calculateScore(entry: { confidence: number }, text: string): number {
+  private calculateScore(entry: LexicalEntry, text: string): number {
     // score = confiance pondérée par la fréquence relative du terme dans le texte
     const lower = text.toLowerCase();
-    const occurrences = (lower.match(new RegExp(entry.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi")) || []).length;
+    const occurrences = (
+      lower.match(
+        new RegExp(entry.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+      ) || []
+    ).length;
     const frequencyFactor = 1 + Math.min(0.3, (occurrences - 1) * 0.1); // bonus faible pour répétition
     return Math.min(100, Math.round(entry.confidence * 100 * frequencyFactor));
   }
