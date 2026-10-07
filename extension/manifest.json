@@ -1,12 +1,18 @@
 {
   "manifest_version": 3,
   "name": "TextOrigin AI",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Identifiez les marqueurs stylistiques des textes générés par l'IA",
   "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "src/popup/index.html",
-    "default_title": "TextOrigin AI"
+    "default_title": "TextOrigin AI",
+    "default_icon": {
+      "16": "public/icon16.png",
+      "48": "public/icon48.png",
+      "128": "public/icon128.png"
+    }
   },
   "icons": {
     "16": "public/icon16.png",
@@ -21,7 +27,19 @@
     {
       "matches": ["<all_urls>"],
       "js": ["assets/content.js"],
-      "run_at": "document_end"
+      "css": ["assets/content.css"],
+      "run_at": "document_idle",
+      "all_frames": false
     }
-  ]
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["public/icon16.png", "public/icon48.png", "public/icon128.png"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'"
+  },
+  "minimum_chrome_version": "88"
 }

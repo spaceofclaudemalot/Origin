@@ -17,16 +17,20 @@ chrome.runtime.onMessage.addListener(
       error?: string;
     }) => void,
   ) => {
-    if (message.type === "ANALYZE_TEXT" && message.text) {
-      service
-        .detectAll(message.text)
-        .then((result: AnalysisResult) => sendResponse({ type: "ANALYSIS_READY", result }))
-        .catch((error: Error) =>
-          sendResponse({ type: "ANALYSIS_ERROR", error: error.message }),
-        );
-      return true; // message asynchrone
+    // Ignorer les messages destinés à d'autres listeners
+    if (message.type !== "ANALYZE_TEXT") return false;
+
+    if (!message.text?.trim()) {
+      sendResponse({ type: "ANALYSIS_ERROR", error: "Texte manquant" });
+      return false;
     }
-    sendResponse({ type: "ANALYSIS_ERROR", error: "Texte manquant" });
+    service
+      .detectAll(message.text)
+      .then((result: AnalysisResult) => sendResponse({ type: "ANALYSIS_READY", result }))
+      .catch((error: Error) =>
+        sendResponse({ type: "ANALYSIS_ERROR", error: error.message }),
+      );
+    return true; // message asynchrone
   },
 );
 export {};
