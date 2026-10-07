@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #ffffff; font-family: system-ui, -apple-system, sans-serif; }
+      #root { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+      .clip { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="18" data-width="1920" data-height="1080">
+      <!-- Scene 1: Hook (0-2s) -->
+      <div id="scene-1" class="clip" data-start="0" data-duration="2">
+        <h1 id="hero-title" style="font-size: 48px; color: #111827; font-family: system-ui, sans-serif;">AI wrote this?</h1>
+      </div>
+
+      <!-- Scene 2: Reveal (2-4s) -->
+      <div id="scene-2" class="clip" data-start="2" data-duration="2">
+        <div id="popup-1" class="popup clip" data-start="2" data-duration="1.5">
+          <h2 style="font-size: 28px; color: #4f46e5; margin-bottom: 16px;">TextOrigin AI</h2>
+          <button class="btn-analyze" data-start="3" data-duration="0.8">Analyze</button>
+        </div>
+      </div>
+
+      <!-- Scene 3: Highlight 1 (4-8s) -->
+      <div id="scene-3" class="clip" data-start="4" data-duration="4">
+        <p style="font-size: 24px; color: #111827; font-family: system-ui, sans-serif;">
+          <span id="highlight-1" class="highlight-orange" data-start="4.5" data-duration="2">AI-generated text</span>
+        </p>
+      </div>
+
+      <!-- Scene 4: Highlight 2 (8-12s) -->
+      <div id="scene-4" class="clip" data-start="8" data-duration="4">
+        <div id="score-1" class="score-card clip" data-start="8.5" data-duration="2">
+          <div id="score-number" class="score-number" data-start="9" data-duration="1">73</div>
+          <div id="score-label" class="score-label" data-start="10" data-duration="1.5">Score : 73 — Confiance : Moyenne</div>
+        </div>
+      </div>
+
+      <!-- Scene 5: Outro (12-18s) -->
+      <div id="scene-5" class="clip" data-start="12" data-duration="6">
+        <div style="text-align: center;">
+          <button id="btn-outro" class="btn-analyze clip" data-start="12.5" data-duration="1">Analyze</button>
+          <div id="badge-1" class="badge" data-start="13.5" data-duration="1" style="margin-top: 16px;">Chrome Web Store</div>
+          <p id="cta-text" class="cta-text" data-start="14.5" data-duration="2" style="margin-top: 24px;">Détectez l'IA. Installez TextOrigin.</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // Scene 1: Fade in hook text
+      tl.fromTo("#scene-1 h1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 }, 0);
+
+      // Scene 2: Popup slide up
+      tl.fromTo("#scene-2 .popup", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5 }, 2);
+      tl.fromTo("#scene-2 .btn-analyze", { scale: 0.9 }, { scale: 1, duration: 0.3 }, 3);
+
+      // Scene 3: Highlight fade in
+      tl.fromTo("#scene-3 .highlight-orange", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5 }, 4.5);
+
+      // Scene 4: Score card reveal
+      tl.fromTo("#scene-4 .score-card", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, 8.5);
+      tl.fromTo("#scene-4 #score-number", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4 }, 9);
+      tl.fromTo("#scene-4 #score-label", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 10);
+
+      // Scene 5: Outro elements
+      tl.fromTo("#scene-5 #btn-outro", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4 }, 12.5);
+      tl.fromTo("#scene-5 #badge-1", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 13.5);
+      tl.fromTo("#scene-5 #cta-text", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 }, 14.5);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+TextOrigin AI — Detect AI fingerprints in any text.
+
+Select text on any page → click the floating purple "Analyze" button → get an AI Marker Score with confidence level.
+
+🔗 Install from Chrome Web Store: https://chromewebstore.google.com/detail/textorigin-ai
+
+#TextOriginAI #AIDetection #ChromeExtension #DevTools
