@@ -1,58 +1,47 @@
-# E2E Manual Test Guide — TextOrigin AI Chrome Extension
+# Test manuel de bout en bout — TextOrigin AI 0.2
 
-## Prerequisites
-- Chrome browser (latest)
-- Extension built (`npm run build`)
+## Préparation
+1. `npm run build` (doit finir par « Contrôle du bundle OK »).
+2. `chrome://extensions` → Mode développeur → Charger l'extension non empaquetée → `extension/dist` (ou « Recharger »).
 
-## Setup
-1. Open `chrome://extensions/`
-2. Enable **Developer mode** (toggle top-right)
-3. Click **Load unpacked** → select `extension/dist/` directory
-4. Verify the extension appears with the TextOrigin AI icon
+## A. Plus d'injection dans les pages
+- [ ] Sur un site quelconque, aucun bouton flottant ni style ajouté.
+- [ ] Les détails de l'extension ne demandent plus l'accès à tous les sites.
 
-## Test Cases
+## B. Popup
+- [ ] Sélection + « Analyze » → score, nombre de marqueurs, confiance.
+- [ ] Sélection + « Ouvrir dans l'éditeur » → nouvel onglet avec le texte (paragraphes conservés).
+- [ ] Sans sélection → document vide.
+- [ ] Sur chrome://extensions → document vide, aucune erreur.
 
-### 1. Popup UI
-- Click the extension icon
-- Verify: "AI Marker Score" header, "Analyze" button, empty state
+## C. Mise en forme
+- [ ] Titres 1–3, police (6), taille (8–72), gras, italique, souligné.
+- [ ] Couleur du texte, surlignage, « Aucune » retire.
+- [ ] Alignements (4), interlignes (1.0, 1.15, 1.5, 2.0).
+- [ ] Listes à puces, numérotées, imbrication avec Tab, citation.
+- [ ] Lien (« example.com » → https://example.com), retrait du lien.
+- [ ] Tableau 3×3, ajout/suppression ligne et colonne, suppression du tableau.
+- [ ] Image par bouton, collage et glisser-déposer ; svg et fichier > 10 Mo refusés par un toast.
+- [ ] Ctrl+Z / Ctrl+Y sur chaque action.
 
-### 2. Empty Selection
-- Click "Analyze" without selecting text
-- Expected: toast/notification "Veuillez sélectionner du texte à analyser"
+## D. Analyse
+Texte : « Furthermore, we must delve into this comprehensive topic. »
+- [ ] Surlignage ~0,5 s après la frappe ; panneau à jour.
+- [ ] Survol → infobulle (explication, suggestions).
+- [ ] Clic dans le panneau → passage sélectionné dans le texte.
+- [ ] « → Moreover » sur « Furthermore » garde la majuscule ; Ctrl+Z rétablit.
+- [ ] Masquer / afficher les marqueurs ; le score reste.
+- [ ] Ctrl+Z ne retire pas les marqueurs (hors historique).
+- [ ] Document vide → « Écrivez ou collez du texte pour l'analyser. »
 
-### 3. Short Text (1 word)
-- Select a single word, click "Analyze"
-- Expected: score 0–100 bounded, no crash
+## E. Documents
+- [ ] « ✓ Enregistré » après modification ; rechargement → contenu et images intacts.
+- [ ] Nouveau, ouvrir, renommer, supprimer (confirmation intégrée, pas de boîte native).
+- [ ] Passer de B à A puis Ctrl+Z dans A : le texte de B ne réapparaît pas.
+- [ ] Copier une image de A vers B, supprimer A : l'image reste dans B.
+- [ ] `?doc=inexistant` → toast « Document introuvable ».
 
-### 4. English Text — LLM Markers
-- Select: "Furthermore, this comprehensive solution is indeed innovative."
-- Expected: high score, markers highlighted in orange/purple
-
-### 5. French Text — LLM Markers
-- Select: "En outre, il convient de noter que cette approche permet de réussir."
-- Expected: detection, score, French markers highlighted
-
-### 6. Non-LLM Text
-- Select: "The cat sat on the mat."
-- Expected: low or zero score, no highlights
-
-### 7. Tooltip Hover
-- Hover over a highlighted marker
-- Expected: tooltip with category label, explanation, suggestion (if any)
-
-### 8. Score Boundaries
-- Select long LLM-like text (50+ words)
-- Expected: score 0–100, never exceeds 100
-
-### 9. Clear Highlights
-- Click "Analyze" again with different selection
-- Expected: previous highlights removed, new ones applied
-
-### 10. Reload Test
-- Reload the page, re-select text, analyze
-- Expected: no stale highlights, fresh analysis
-
-## Notes
-- All scores are integers 0–100 (never probabilities)
-- Confidence levels: low / medium / high
-- Toast notifications appear for empty/short selections
+## F. Exports
+Document de test : titre, gras, couleur, surlignage, liste imbriquée, 2 listes numérotées séparées, tableau, image, lien, marqueurs visibles.
+- [ ] Word (.docx) → nom = titre ; ouvert dans Word ou LibreOffice : tout est présent, la 2ᵉ liste numérotée recommence à 1, aucun marqueur.
+- [ ] PDF → boîte d'impression, nom = titre, A4 sans interface ni marqueurs, texte sélectionnable, pas d'image coupée entre deux pages.
