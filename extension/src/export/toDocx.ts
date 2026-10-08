@@ -1,7 +1,7 @@
 import {
-  AlignmentType, BorderStyle, Document, ExternalHyperlink, HeadingLevel, LevelFormat,
-  LineRuleType, Packer, Paragraph, ShadingType, TextRun,
-  convertMillimetersToTwip, type IRunOptions, type ParagraphChild, type Table,
+  AlignmentType, BorderStyle, Document, ExternalHyperlink, HeadingLevel, ImageRun, LevelFormat,
+  LineRuleType, Packer, Paragraph, ShadingType, Table, TableCell, TableRow, TextRun, WidthType,
+  convertMillimetersToTwip, type IRunOptions, type ParagraphChild,
 } from "docx";
 import type { JSONContent } from "@tiptap/core";
 
@@ -33,6 +33,7 @@ const PAGE_MARGIN = convertMillimetersToTwip(25); // 1417
 // Dimensions A4 exactes de Word (convertMillimetersToTwip arrondit à 11905 × 16837)
 const A4_WIDTH = 11906;
 const A4_HEIGHT = 16838;
+const CONTENT_WIDTH_PX = Math.round((160 / 25.4) * 96); // 16 cm à 96 dpi = 605
 const DEFAULT_HIGHLIGHT = "FEF08A";
 const INDENT_STEP = 720; // 0,5 pouce en twips
 
@@ -141,6 +142,85 @@ function paragraph(node: JSONContent, bctx: BlockContext, numbered: boolean): Pa
   });
 }
 
+const IMAGE_TYPES: Record<string, "png" | "jpg" | "gif"> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/gif": "gif",
+};
+
+function fitToContent(width: number, height: number): { width: number; height: number } {
+  if (!(width > 0) || !(height > 0)) return { width: CONTENT_WIDTH_PX, height: Math.round(CONTENT_WIDTH_PX * 0.75) };
+  const scale = Math.min(1, CONTENT_WIDTH_PX / width);
+  return { width: Math.round(width * scale), height: Math.round(height * scale) };
+}
+
+async function image(node: JSONContent, ctx: ExportContext): Promise<Block[]> {
+  const a = node.attrs ?? {};
+  if (typeof a.imageId !== "string") return [];
+  const blob = await ctx.opts.getImage(a.imageId);
+  const type = blob ? IMAGE_TYPES[blob.type] : undefined;
+  // Image absente ou format non pris en charge par docx : on l'ignore
+  if (!blob || !type) return [];
+  return [
+    new Paragraph({
+      children: [
+        new ImageRun({
+          type,
+          data: new Uint8Array(await blob.arrayBuffer()),
+          transformation: fitToContent(Number(a.width), Number(a.height)),
+        }),
+      ],
+    }),
+  ];
+}
+
+async function list(node: JSONContent, ctx: ExportContext, bctx: BlockContext): Promise<Block[]> {
+  const reference = node.type === "orderedList" ? "numbers" : "bullets";
+  const parent = bctx.list;
+  const listCtx: ListContext = {
+    reference,
+    level: parent ? Math.min(8, parent.level + 1) : 0,
+    // Une liste imbriquée de même type poursuit l'instance du parent ;
+    // une nouvelle liste de premier niveau recommence la numérotation.
+    instance: parent && parent.reference === reference ? parent.instance : ctx.nextListInstance++,
+  };
+  const out: Block[] = [];
+  for (const item of node.content ?? []) {
+    let numbered = false;
+    for (const child of item.content ?? []) {
+      if (child.type === "bulletList" || child.type === "orderedList") {
+        out.push(...(await list(child, ctx, { ...bctx, list: listCtx })));
+      } else if (child.type === "paragraph" || child.type === "heading") {
+        out.push(paragraph(child, { ...bctx, list: listCtx }, !numbered));
+        numbered = true;
+      } else {
+        out.push(...(await blocks([child], ctx, { ...bctx, list: listCtx })));
+      }
+    }
+  }
+  return out;
+}
+
+async function table(node: JSONContent, ctx: ExportContext, bctx: BlockContext): Promise<Block[]> {
+  const rows: TableRow[] = [];
+  for (const row of node.content ?? []) {
+    const cells: TableCell[] = [];
+    for (const cell of row.content ?? []) {
+      const a = cell.attrs ?? {};
+      const children = await blocks(cell.content, ctx, { ...bctx, list: undefined, bold: cell.type === "tableHeader" });
+      cells.push(
+        new TableCell({
+          children: children.length ? children : [new Paragraph({})],
+          ...(Number(a.colspan) > 1 ? { columnSpan: Number(a.colspan) } : {}),
+          ...(Number(a.rowspan) > 1 ? { rowSpan: Number(a.rowspan) } : {}),
+        }),
+      );
+    }
+    if (cells.length) rows.push(new TableRow({ children: cells }));
+  }
+  return rows.length ? [new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows })] : [];
+}
+
 async function blocks(nodes: JSONContent[] | undefined, ctx: ExportContext, bctx: BlockContext): Promise<Block[]> {
   const out: Block[] = [];
   for (const node of nodes ?? []) {
@@ -151,6 +231,16 @@ async function blocks(nodes: JSONContent[] | undefined, ctx: ExportContext, bctx
         break;
       case "blockquote":
         out.push(...(await blocks(node.content, ctx, { ...bctx, quote: true })));
+        break;
+      case "bulletList":
+      case "orderedList":
+        out.push(...(await list(node, ctx, bctx)));
+        break;
+      case "table":
+        out.push(...(await table(node, ctx, bctx)));
+        break;
+      case "storedImage":
+        out.push(...(await image(node, ctx)));
         break;
       default:
         out.push(...(await blocks(node.content, ctx, bctx)));
