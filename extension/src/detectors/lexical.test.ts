@@ -79,3 +79,13 @@ describe("LexicalDetector", () => {
     expect(transitions.length).toBe(3);
   });
 });
+describe("LexicalDetector offsets", () => {
+  it("keeps offsets on the original text when lowercasing changes its length (İ)", async () => {
+    const text = "İstanbul. Furthermore, this is comprehensive.";
+    const result = await new LexicalDetector().detect(text);
+    expect(result.length).toBeGreaterThanOrEqual(2);
+    for (const d of result) {
+      expect(text.slice(d.start, d.end).toLowerCase()).toBe(d.text.toLowerCase());
+    }
+  });
+});
