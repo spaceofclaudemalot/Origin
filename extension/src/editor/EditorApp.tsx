@@ -6,6 +6,7 @@ import { AiMarkers } from "./extensions/AiMarkers";
 import { StoredImageWithView, insertImageFiles } from "./StoredImageView";
 import { useAutosave, type SaveStatus } from "./useAutosave";
 import { useToast } from "./Toast";
+import { Toolbar } from "./Toolbar";
 import { create, get, list, type StoredDocument } from "../storage/documents";
 
 export function editorExtensions(): Extensions {
@@ -116,7 +117,7 @@ export const EditorApp: React.FC = () => {
           <div className="flex-1" />
           {/* ExportMenu (Tâche 12) */}
         </div>
-        {/* Toolbar (Tâche 9) */}
+        <Toolbar editor={editor} />
       </header>
       <div className="flex flex-1 min-h-0">
         <main className="flex-1 overflow-auto">
