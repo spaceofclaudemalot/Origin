@@ -7,6 +7,9 @@ import { StoredImageWithView, insertImageFiles } from "./StoredImageView";
 import { useAutosave, type SaveStatus } from "./useAutosave";
 import { useToast } from "./Toast";
 import { Toolbar } from "./Toolbar";
+import { AnalysisPanel } from "./AnalysisPanel";
+import { MarkerTooltip } from "./MarkerTooltip";
+import { useLiveAnalysis } from "./useLiveAnalysis";
 import { create, get, list, type StoredDocument } from "../storage/documents";
 
 export function editorExtensions(): Extensions {
@@ -71,6 +74,7 @@ export const EditorApp: React.FC = () => {
     },
     [current?.id],
   );
+  const analysis = useLiveAnalysis(editor);
 
   const loaded = useRef(false);
   useEffect(() => {
@@ -125,7 +129,8 @@ export const EditorApp: React.FC = () => {
             <EditorContent editor={editor} />
           </div>
         </main>
-        {/* AnalysisPanel (Tâche 10) */}
+        <AnalysisPanel editor={editor} analysis={analysis} />
+        <MarkerTooltip editor={editor} result={analysis.result} sourceText={analysis.sourceText} />
       </div>
     </div>
   );
