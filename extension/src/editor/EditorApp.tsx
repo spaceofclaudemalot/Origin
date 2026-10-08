@@ -8,6 +8,7 @@ import { useAutosave, type SaveStatus } from "./useAutosave";
 import { useToast } from "./Toast";
 import { Toolbar } from "./Toolbar";
 import { DocumentList } from "./DocumentList";
+import { ExportMenu } from "./ExportMenu";
 import { AnalysisPanel } from "./AnalysisPanel";
 import { MarkerTooltip } from "./MarkerTooltip";
 import { useLiveAnalysis } from "./useLiveAnalysis";
@@ -125,7 +126,7 @@ export const EditorApp: React.FC = () => {
             </button>
           )}
           <div className="flex-1" />
-          {/* ExportMenu (Tâche 12) */}
+          <ExportMenu editor={editor} title={title} />
         </div>
         <Toolbar editor={editor} />
       </header>

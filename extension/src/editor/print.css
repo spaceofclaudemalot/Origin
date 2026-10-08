@@ -1,0 +1,46 @@
+@page {
+  size: A4;
+  margin: 2.5cm;
+}
+
+@media print {
+  html, body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  main {
+    overflow: visible !important;
+  }
+  .sheet {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .sheet .ProseMirror {
+    min-height: 0;
+  }
+  /* Les marqueurs IA ne s'impriment jamais */
+  .to-marker {
+    background: none !important;
+    outline: none !important;
+  }
+  .sheet img,
+  .sheet tr,
+  .sheet blockquote {
+    break-inside: avoid;
+  }
+  .sheet h1, .sheet h2, .sheet h3 {
+    break-after: avoid;
+  }
+  .ProseMirror-selectednode img {
+    outline: none !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
