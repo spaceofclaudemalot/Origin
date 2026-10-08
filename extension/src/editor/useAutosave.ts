@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { update, type StoredDocument } from "../storage/documents";
+import { put, update, type StoredDocument } from "../storage/documents";
+import { createSaveQueue, type Patch, type SaveStatus } from "./saveQueue";
 
-export type SaveStatus = "saved" | "saving" | "error";
-type Patch = Partial<Pick<StoredDocument, "title" | "content">>;
+export type { SaveStatus } from "./saveQueue";
 
 const SAVE_DELAY = 1000;
 
@@ -12,51 +12,36 @@ const SAVE_DELAY = 1000;
  */
 export function useAutosave() {
   const [status, setStatus] = useState<SaveStatus>("saved");
-  const pending = useRef<{ id: string; patch: Patch } | null>(null);
+  const queue = useRef(createSaveQueue({ update, put, onStatus: setStatus })).current;
   const timer = useRef<number | undefined>(undefined);
 
   const flush = useCallback(async () => {
     window.clearTimeout(timer.current);
-    const job = pending.current;
-    if (!job) return;
-    pending.current = null;
-    try {
-      await update(job.id, job.patch);
-      if (!pending.current) setStatus("saved");
-    } catch (e) {
-      console.error("[TextOrigin] sauvegarde impossible:", e);
-      // Les modifications arrivées pendant l'échec priment sur l'ancien patch
-      // (relu via un cast : TS croit pending.current toujours nul ici)
-      const newer = pending.current as { id: string; patch: Patch } | null;
-      pending.current = {
-        id: job.id,
-        patch: { ...job.patch, ...(newer?.id === job.id ? newer.patch : {}) },
-      };
-      setStatus("error");
-    }
-  }, []);
+    await queue.flush();
+  }, [queue]);
 
   const schedule = useCallback(
     (id: string, patch: Patch) => {
-      const merged = pending.current?.id === id ? { ...pending.current.patch, ...patch } : patch;
-      if (pending.current && pending.current.id !== id) void flush();
-      pending.current = { id, patch: merged };
-      setStatus("saving");
+      queue.schedule(id, patch);
       window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => void flush(), SAVE_DELAY);
     },
-    [flush],
+    [queue, flush],
   );
 
+  const track = useCallback((doc: StoredDocument) => queue.track(doc), [queue]);
+
   useEffect(() => {
-    const onHide = () => void flush();
+    // Fermeture ou mise en arrière-plan : écriture immédiate, sans lecture préalable
+    const onHide = () => queue.flushNow();
+    const onVisibility = () => document.visibilityState === "hidden" && queue.flushNow();
     window.addEventListener("pagehide", onHide);
-    document.addEventListener("visibilitychange", onHide);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("pagehide", onHide);
-      document.removeEventListener("visibilitychange", onHide);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [flush]);
+  }, [queue]);
 
-  return { status, schedule, flush };
+  return { status, schedule, flush, track };
 }

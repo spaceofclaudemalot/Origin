@@ -30,7 +30,7 @@ function imageFiles(list: FileList | null | undefined): File[] {
 
 export const EditorApp: React.FC = () => {
   const toast = useToast();
-  const { status, schedule, flush } = useAutosave();
+  const { status, schedule, flush, track } = useAutosave();
   const [current, setCurrent] = useState<StoredDocument | null>(null);
   const [title, setTitle] = useState("");
   const currentId = useRef<string | null>(null);
@@ -38,13 +38,14 @@ export const EditorApp: React.FC = () => {
   const open = useCallback(
     async (doc: StoredDocument) => {
       await flush();
+      track(doc);
       currentId.current = doc.id;
       setCurrent(doc);
       setTitle(doc.title);
       history.replaceState(null, "", `?doc=${doc.id}`);
       document.title = `${doc.title} — TextOrigin`;
     },
-    [flush],
+    [flush, track],
   );
 
   // Un éditeur neuf par document : l'historique d'annulation ne déborde
@@ -108,7 +109,7 @@ export const EditorApp: React.FC = () => {
           <DocumentList
             currentId={current?.id ?? null}
             onOpen={(doc) => void open(doc)}
-            onCurrentRenamed={(t) => { setTitle(t); document.title = `${t} — TextOrigin`; }}
+            onCurrentRenamed={(t) => rename(t)}
             beforeAction={flush}
           />
           <input

@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  create, get, list, update, remove, putImage, getImage, textToContent, collectImageIds,
+  create, get, list, update, remove, put, putImage, getImage, textToContent, collectImageIds, DocumentNotFoundError,
   __resetDbForTests, __setClockForTests, DEFAULT_TITLE,
 } from "./documents";
 
@@ -64,6 +64,13 @@ describe("documents store", () => {
 
   it("rejects update of a missing document", async () => {
     await expect(update("nope", { title: "x" })).rejects.toThrow("Document introuvable");
+    await expect(update("nope", { title: "x" })).rejects.toBeInstanceOf(DocumentNotFoundError);
+  });
+
+  it("put writes a whole document in one request", async () => {
+    const doc = await create({ title: "A" });
+    await put({ ...doc, title: "B", updatedAt: 5000 });
+    expect(await get(doc.id)).toMatchObject({ title: "B", updatedAt: 5000 });
   });
 
   it("stores and returns image bytes with their type", async () => {

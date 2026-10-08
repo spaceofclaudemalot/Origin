@@ -21,6 +21,14 @@ interface StoredImageRecord {
 
 export const DEFAULT_TITLE = "Sans titre";
 
+/** Le document n'existe plus (supprimé, éventuellement depuis un autre onglet). */
+export class DocumentNotFoundError extends Error {
+  constructor() {
+    super("Document introuvable");
+    this.name = "DocumentNotFoundError";
+  }
+}
+
 const DB_NAME = "textorigin";
 const DB_VERSION = 1;
 const DOCS = "documents";
@@ -114,7 +122,7 @@ export async function update(
   patch: Partial<Pick<StoredDocument, "title" | "content">>,
 ): Promise<StoredDocument> {
   const existing = await get(id);
-  if (!existing) throw new Error("Document introuvable");
+  if (!existing) throw new DocumentNotFoundError();
   const next: StoredDocument = {
     ...existing,
     ...(patch.title !== undefined ? { title: patch.title.trim() || DEFAULT_TITLE } : {}),
@@ -123,6 +131,14 @@ export async function update(
   };
   await promisify((await store(DOCS, "readwrite")).put(next));
   return next;
+}
+
+/**
+ * Écriture d'un document complet en une seule requête : utilisable pendant
+ * la fermeture de la page, où une lecture suivie d'une écriture n'aboutirait pas.
+ */
+export async function put(doc: StoredDocument): Promise<void> {
+  await promisify((await store(DOCS, "readwrite")).put(doc));
 }
 
 export async function remove(id: string): Promise<void> {
