@@ -19,7 +19,10 @@ export function formatFr(n: number, digits = 2): string {
   return n.toFixed(digits).replace(".", ",").replace("-", "−");
 }
 
-/** Expression « mot entier » avec frontières Unicode (lettres accentuées comprises). */
+/**
+ * Expression « mot entier » avec frontières Unicode (lettres accentuées comprises,
+ * y compris les accents combinants d'un texte décomposé NFD).
+ */
 export function wordBoundary(source: string, flags = "giu"): RegExp {
-  return new RegExp(`(?<![\\p{L}\\p{N}])(?:${source})(?![\\p{L}\\p{N}])`, flags);
+  return new RegExp(`(?<![\\p{L}\\p{N}\\p{M}])(?:${source})(?![\\p{L}\\p{N}\\p{M}])`, flags);
 }

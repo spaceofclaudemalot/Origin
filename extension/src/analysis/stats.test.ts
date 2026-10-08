@@ -28,5 +28,10 @@ describe("stats", () => {
     expect("La crucialité".match(re)).toBeNull();
     expect("Un point crucial.".match(re)?.[0]).toBe("crucial");
     expect("Néanmoins, oui".match(wordBoundary("néanmoins", "giu"))?.[0]).toBe("Néanmoins");
+    // une frontière ASCII () rate les termes qui finissent par une lettre accentuée
+    expect("un fiancé ravi".match(/fiancé/i)).toBeNull();
+    expect("un fiancé ravi".match(wordBoundary("fiancé"))?.[0]).toBe("fiancé");
+    // texte décomposé (NFD) : l'accent combinant fait partie du mot
+    expect("un fiancé ravi".match(wordBoundary("fiance"))).toBeNull();
   });
 });
