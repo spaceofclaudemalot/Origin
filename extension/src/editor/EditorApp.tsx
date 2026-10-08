@@ -7,6 +7,7 @@ import { StoredImageWithView, insertImageFiles } from "./StoredImageView";
 import { useAutosave, type SaveStatus } from "./useAutosave";
 import { useToast } from "./Toast";
 import { Toolbar } from "./Toolbar";
+import { DocumentList } from "./DocumentList";
 import { AnalysisPanel } from "./AnalysisPanel";
 import { MarkerTooltip } from "./MarkerTooltip";
 import { useLiveAnalysis } from "./useLiveAnalysis";
@@ -103,7 +104,12 @@ export const EditorApp: React.FC = () => {
     <div className="min-h-screen flex flex-col">
       <header className="no-print sticky top-0 z-20 bg-white border-b border-gray-200">
         <div className="flex items-center gap-3 px-4 h-14">
-          {/* DocumentList (Tâche 11) */}
+          <DocumentList
+            currentId={current?.id ?? null}
+            onOpen={(doc) => void open(doc)}
+            onCurrentRenamed={(t) => { setTitle(t); document.title = `${t} — TextOrigin`; }}
+            beforeAction={flush}
+          />
           <input
             value={title}
             onChange={(e) => rename(e.target.value)}
