@@ -138,7 +138,12 @@ export async function update(
  * la fermeture de la page, où une lecture suivie d'une écriture n'aboutirait pas.
  */
 export async function put(doc: StoredDocument): Promise<void> {
-  await promisify((await store(DOCS, "readwrite")).put(doc));
+  const docs = await store(DOCS, "readwrite");
+  const request = docs.put(doc);
+  // Validation immédiate : pendant le déchargement, le navigateur ferme la
+  // connexion de force et annule toute transaction encore ouverte.
+  docs.transaction.commit?.();
+  await promisify(request);
 }
 
 export async function remove(id: string): Promise<void> {
