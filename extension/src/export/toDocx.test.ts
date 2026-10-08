@@ -235,3 +235,14 @@ describe("toDocx — lists, links, tables, images", () => {
     expect(xml).toMatch(/Il faut delve ici/);
   });
 });
+
+describe("toDocx — OOXML validity", () => {
+  it("ends a cell with a paragraph when its last block is a nested table", async () => {
+    const inner = { type: "table", content: [{ type: "tableRow", content: [{ type: "tableCell", content: [p([t("in")])] }] }] };
+    const xml = await documentXml([{ type: "table", content: [
+      { type: "tableRow", content: [{ type: "tableCell", content: [p([t("out")]), inner] }] },
+    ] }]);
+    // Chaque </w:tc> doit être précédé d'un paragraphe, jamais directement de </w:tbl>
+    expect(xml).not.toMatch(/<\/w:tbl><\/w:tc>/);
+  });
+});
