@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { AnalysisResult } from "../types/types";
+import { create } from "../storage/documents";
 import "./global.css";
 
 const STORAGE_KEY = "textorigin:selection";
@@ -48,27 +49,15 @@ const App: React.FC = () => {
   };
 
   /**
-   * Récupère la sélection de l'onglet actif : via le content script, ou par
-   * injection directe si celui-ci n'est pas chargé (onglet ouvert avant
-   * l'installation / le rechargement de l'extension).
+   * Lit la sélection de l'onglet actif par injection à la demande
+   * (autorisée par activeTab), dans tous les cadres.
    */
   const getPageSelection = async (): Promise<string> => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id == null) throw new Error("Impossible d'accéder à l'onglet actif.");
-    const tabId = tab.id;
-
-    const fromContentScript = await new Promise<string>((resolve) => {
-      chrome.tabs.sendMessage(tabId, { type: "GET_PAGE_SELECTION" }, (r) => {
-        if (chrome.runtime.lastError) resolve("");
-        else resolve(typeof r?.text === "string" ? r.text : "");
-      });
-    });
-    if (fromContentScript.trim()) return fromContentScript;
-
-    // Repli : lecture directe dans tous les cadres (iframes comprises)
     try {
       const injections = await chrome.scripting.executeScript({
-        target: { tabId, allFrames: true },
+        target: { tabId: tab.id, allFrames: true },
         func: () => {
           const active = document.activeElement;
           if (
@@ -110,6 +99,28 @@ const App: React.FC = () => {
 
     setResult(null);
     analyze(text);
+  };
+
+  const [opening, setOpening] = useState(false);
+
+  /** Crée un document à partir de la sélection (ou vide) et l'ouvre dans l'éditeur. */
+  const handleOpenEditor = async () => {
+    if (opening) return;
+    setOpening(true);
+    let text = "";
+    try {
+      text = (await getPageSelection()).trim();
+    } catch {
+      // page protégée : on ouvre un document vide
+    }
+    try {
+      const doc = await create({ text });
+      await chrome.tabs.create({ url: chrome.runtime.getURL(`src/editor/index.html?doc=${doc.id}`) });
+      window.close();
+    } catch (e) {
+      setError(`Impossible d'ouvrir l'éditeur : ${(e as Error).message}`);
+      setOpening(false);
+    }
   };
 
   const scoreColor = (score: number) =>
@@ -160,6 +171,15 @@ const App: React.FC = () => {
           className="w-full py-2.5 px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
         >
           {loading ? "Analyse en cours..." : "Analyze"}
+        </button>
+
+        <button
+          onClick={handleOpenEditor}
+          disabled={opening}
+          aria-label="Ouvrir la sélection dans l'éditeur"
+          className="w-full py-2.5 px-4 border border-primary-600 text-primary-700 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-gray-800 disabled:opacity-50 rounded-lg font-medium transition-colors"
+        >
+          {opening ? "Ouverture…" : "Ouvrir dans l'éditeur"}
         </button>
 
         {loading && (
