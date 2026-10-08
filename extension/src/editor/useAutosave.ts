@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { put, update, type StoredDocument } from "../storage/documents";
+import { clearBackup, writeBackup } from "../storage/backup";
 import { createSaveQueue, type Patch, type SaveStatus } from "./saveQueue";
 
 export type { SaveStatus } from "./saveQueue";
@@ -12,7 +13,7 @@ const SAVE_DELAY = 1000;
  */
 export function useAutosave() {
   const [status, setStatus] = useState<SaveStatus>("saved");
-  const queue = useRef(createSaveQueue({ update, put, onStatus: setStatus })).current;
+  const queue = useRef(createSaveQueue({ update, put, backup: writeBackup, clearBackup, onStatus: setStatus })).current;
   const timer = useRef<number | undefined>(undefined);
 
   const flush = useCallback(async () => {

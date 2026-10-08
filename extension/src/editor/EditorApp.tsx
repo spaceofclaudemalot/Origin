@@ -13,6 +13,7 @@ import { AnalysisPanel } from "./AnalysisPanel";
 import { MarkerTooltip } from "./MarkerTooltip";
 import { useLiveAnalysis } from "./useLiveAnalysis";
 import { create, get, list, type StoredDocument } from "../storage/documents";
+import { withBackup } from "../storage/backup";
 
 export function editorExtensions(): Extensions {
   return [...baseExtensions({ storedImage: StoredImageWithView }), AiMarkers];
@@ -36,16 +37,19 @@ export const EditorApp: React.FC = () => {
   const currentId = useRef<string | null>(null);
 
   const open = useCallback(
-    async (doc: StoredDocument) => {
+    async (stored: StoredDocument) => {
       await flush();
-      track(doc);
+      track(stored);
+      // Modifications non enregistrées lors d'une fermeture : on les reprend
+      const { doc, recovered } = withBackup(stored);
+      if (recovered) schedule(doc.id, { title: doc.title, content: doc.content });
       currentId.current = doc.id;
       setCurrent(doc);
       setTitle(doc.title);
       history.replaceState(null, "", `?doc=${doc.id}`);
       document.title = `${doc.title} — TextOrigin`;
     },
-    [flush, track],
+    [flush, track, schedule],
   );
 
   // Un éditeur neuf par document : l'historique d'annulation ne déborde

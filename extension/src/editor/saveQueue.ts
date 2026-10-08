@@ -6,6 +6,8 @@ export type Patch = Partial<Pick<StoredDocument, "title" | "content">>;
 interface SaveQueueDeps {
   update(id: string, patch: Patch): Promise<StoredDocument>;
   put(doc: StoredDocument): Promise<void>;
+  backup(doc: StoredDocument): void;
+  clearBackup(id: string): void;
   onStatus(status: SaveStatus): void;
 }
 
@@ -47,10 +49,12 @@ export function createSaveQueue(deps: SaveQueueDeps) {
         jobs.map(async ([id, patch]) => {
           try {
             bases.set(id, await deps.update(id, patch));
+            if (!pending.has(id)) deps.clearBackup(id);
           } catch (e) {
             // Document supprimé : plus rien à enregistrer pour lui
             if (e instanceof DocumentNotFoundError) {
               bases.delete(id);
+              deps.clearBackup(id);
               return;
             }
             console.error("[TextOrigin] sauvegarde impossible:", e);
@@ -73,7 +77,10 @@ export function createSaveQueue(deps: SaveQueueDeps) {
         const base = bases.get(id);
         if (!base) continue;
         const title = patch.title !== undefined ? patch.title.trim() || DEFAULT_TITLE : base.title;
-        void deps.put({ ...base, ...patch, title, updatedAt: Date.now() }).catch(() => {});
+        const doc = { ...base, ...patch, title, updatedAt: Date.now() };
+        // Copie synchrone garantie, puis écriture IndexedDB (peut être annulée)
+        deps.backup(doc);
+        void deps.put(doc).catch(() => {});
       }
     },
   };

@@ -8,9 +8,11 @@ const doc = (id: string, title = id): StoredDocument => ({
 
 function setup(update: (id: string, patch: object) => Promise<StoredDocument>) {
   const put = vi.fn(async (_doc: StoredDocument) => {});
+  const backup = vi.fn((_doc: StoredDocument) => {});
+  const clearBackup = vi.fn((_id: string) => {});
   const statuses: string[] = [];
-  const queue = createSaveQueue({ update, put, onStatus: (s) => statuses.push(s) });
-  return { queue, put, statuses };
+  const queue = createSaveQueue({ update, put, backup, clearBackup, onStatus: (s) => statuses.push(s) });
+  return { queue, put, backup, clearBackup, statuses };
 }
 
 describe("createSaveQueue", () => {
@@ -93,5 +95,21 @@ describe("createSaveQueue", () => {
     queue.schedule("X", { title: "x" });
     queue.flushNow();
     expect(put).not.toHaveBeenCalled();
+  });
+
+  it("flushNow writes the same document synchronously to the backup and to put", () => {
+    const { queue, put, backup } = setup(async (id) => doc(id));
+    queue.track(doc("A"));
+    queue.schedule("A", { title: "x" });
+    queue.flushNow();
+    expect(backup).toHaveBeenCalledTimes(1);
+    expect(backup.mock.calls[0][0]).toEqual(put.mock.calls[0][0]);
+  });
+
+  it("clears the backup once the document is saved", async () => {
+    const { queue, clearBackup } = setup(async (id) => doc(id));
+    queue.schedule("A", { title: "x" });
+    await queue.flush();
+    expect(clearBackup).toHaveBeenCalledWith("A");
   });
 });
