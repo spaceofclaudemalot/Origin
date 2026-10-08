@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sheet-width: 21cm;
+  --sheet-padding: 2.5cm;
+}
+
+body {
+  background: #f1f3f4;
+}
+
+.sheet {
+  width: var(--sheet-width);
+  min-height: 29.7cm;
+  padding: var(--sheet-padding);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px rgba(60, 64, 67, 0.15);
+  margin: 24px auto;
+  font-family: Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.15;
+  color: #202124;
+}
+
+.sheet .ProseMirror {
+  outline: none;
+  min-height: 24.7cm;
+}
+.sheet .ProseMirror > * + * { margin-top: 0.5em; }
+.sheet h1 { font-size: 20pt; font-weight: 700; }
+.sheet h2 { font-size: 16pt; font-weight: 700; }
+.sheet h3 { font-size: 13pt; font-weight: 700; }
+.sheet ul { list-style: disc; padding-left: 1.5em; }
+.sheet ol { list-style: decimal; padding-left: 1.5em; }
+.sheet blockquote { border-left: 3px solid #ccc; padding-left: 1em; color: #5f6368; }
+.sheet a { color: #0563c1; text-decoration: underline; }
+.sheet table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+.sheet td, .sheet th { border: 1px solid #bdc1c6; padding: 4px 8px; vertical-align: top; }
+.sheet th { font-weight: 700; background: #f8f9fa; }
+.sheet .selectedCell { background: rgba(26, 115, 232, 0.12); }
+.sheet img { max-width: 100%; height: auto; display: block; }
+.sheet .ProseMirror-selectednode img { outline: 2px solid #1a73e8; }
+
+/* Marqueurs IA (palette reprise de l'ancien surlignage dans la page) */
+.to-marker { border-radius: 2px; cursor: help; }
+.to-marker--low { background-color: rgba(96, 165, 250, 0.35); }
+.to-marker--medium { background-color: rgba(251, 191, 36, 0.45); }
+.to-marker--high { background-color: rgba(239, 68, 68, 0.35); }
+.to-marker--focus { outline: 2px solid #4f46e5; }
