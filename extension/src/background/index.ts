@@ -1,11 +1,9 @@
 // Entrypoint du service worker principal de l'extension Chrome.
-// Implémenté dans la Tâche 5 (messagerie background ↔ content script).
-import { DetectorService } from "../services/detector";
-import { LexicalDetector } from "../detectors/lexical";
+// Sert l'analyse rapide demandée par le popup (ANALYZE_TEXT).
+import { createDetectorService } from "../analysis/service";
 import type { AnalysisResult } from "../types/types";
 
-const service = new DetectorService();
-service.register(new LexicalDetector());
+const service = createDetectorService();
 
 chrome.runtime.onMessage.addListener(
   (
