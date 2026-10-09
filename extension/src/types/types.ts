@@ -86,6 +86,8 @@ export interface AnalysisResult {
   /** Signaux portant sur tout le document. */
   signals: GlobalSignal[];
   wordCount: number;
+  /** Caractères invisibles : rapport séparé, sans effet sur le score. */
+  invisibles: InvisibleReport;
   segments?: Array<{
     index: number;
     total: number;
@@ -134,4 +136,27 @@ export interface FamilyScore {
 /** Détecteur qui produit aussi des signaux globaux à partir du texte découpé. */
 export interface GlobalDetector {
   signals(text: string, segmented: import("../analysis/segment").Segmented): GlobalSignal[];
+}
+
+/** Caractère invisible ou espace spéciale trouvé dans le texte (hors score IA). */
+export interface InvisibleFinding {
+  start: number;
+  end: number;
+  /** Nom court du type (« ZWSP », « NBSP », « TAG »…). */
+  name: string;
+  /** Badge affiché dans l'éditeur. */
+  label: string;
+  severity: "hint" | "suspect";
+  /** Nombre de caractères regroupés (suites consécutives d'un même type). */
+  count: number;
+  /** Nettoyage : suppression, ou remplacement par une espace normale. */
+  action: "remove" | "space";
+  /** Texte caché décodé (caractères « tag »). */
+  hidden?: string;
+}
+
+export interface InvisibleReport {
+  findings: InvisibleFinding[];
+  total: number;
+  suspects: number;
 }

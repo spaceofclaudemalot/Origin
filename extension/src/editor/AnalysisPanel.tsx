@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/react";
-import type { Detection, DetectionCategory, GlobalSignal, SignalFamily } from "../types/types";
+import type { Detection, DetectionCategory, GlobalSignal, InvisibleFinding, InvisibleReport, SignalFamily } from "../types/types";
 import { findMarkerRange, markerLevel, markersVisible, setMarkersVisible } from "./extensions/AiMarkers";
 import { setSignalHighlight } from "./extensions/SignalHighlights";
 import { matchCase } from "../analysis/live";
-import { buildTextIndex, mapRanges } from "../analysis/positions";
+import { buildTextIndex, mapRange, mapRanges } from "../analysis/positions";
+import { cleanupTransaction } from "./invisibleCleanup";
 import { FAMILY_LABEL, FAMILY_OF_TYPE } from "../analysis/scoring";
 import type { useLiveAnalysis } from "./useLiveAnalysis";
 
@@ -46,6 +47,103 @@ function reveal(editor: Editor, detection: Detection) {
   if (!range) return;
   editor.chain().focus().setTextSelection(range).scrollIntoView().run();
 }
+
+const INVISIBLE_LABEL: Record<string, string> = {
+  ZWSP: "Espace de largeur nulle",
+  ZWNJ: "Anti-liant de largeur nulle",
+  ZWJ: "Liant de largeur nulle",
+  WJ: "Gluon de mots",
+  BOM: "Indicateur d'ordre des octets",
+  SHY: "Trait d'union conditionnel",
+  CGJ: "Graphème combinant",
+  MVS: "Séparateur de voyelle mongol",
+  LRM: "Marque gauche-à-droite",
+  RLM: "Marque droite-à-gauche",
+  FILLER: "Caractère de remplissage",
+  INVOP: "Opérateur mathématique invisible",
+  NBSP: "Espace insécable",
+  NNBSP: "Espace fine insécable",
+  ENSP: "Espace demi-cadratin",
+  EMSP: "Espace cadratin",
+  SPACE: "Espace typographique",
+  FIGSP: "Espace de chiffre",
+  PUNCSP: "Espace de ponctuation",
+  THSP: "Espace fine",
+  HSP: "Espace ultra-fine",
+  IDSP: "Espace idéographique",
+  TAG: "Caractères « tag » (texte caché)",
+  VS: "Sélecteur de variante",
+};
+const invisibleLabel = (name: string) => INVISIBLE_LABEL[name] ?? "Contrôle bidirectionnel";
+
+/** Caractères invisibles : indice de copier-coller ou de manipulation, hors score. */
+const InvisiblesSection: React.FC<{ editor: Editor | null; report: InvisibleReport; sourceText: string }> = ({
+  editor, report, sourceText,
+}) => {
+  const groups = new Map<string, { count: number; severity: InvisibleFinding["severity"]; first: InvisibleFinding }>();
+  for (const f of report.findings) {
+    const g = groups.get(f.name);
+    if (g) g.count += f.count;
+    else groups.set(f.name, { count: f.count, severity: f.severity, first: f });
+  }
+  const hidden = report.findings.map((f) => f.hidden).filter(Boolean).join(" ");
+
+  // Les positions du rapport ne valent que pour le texte analysé
+  const currentIndex = () => {
+    if (!editor) return null;
+    const index = buildTextIndex(editor.state.doc);
+    return index.text === sourceText ? index : null;
+  };
+  const select = (f: InvisibleFinding) => {
+    const index = currentIndex();
+    const r = index && mapRange(index, f.start, f.end);
+    if (editor && r) editor.chain().focus().setTextSelection(r).scrollIntoView().run();
+  };
+  const clean = () => {
+    const index = currentIndex();
+    if (!editor || !index) return;
+    editor.view.dispatch(cleanupTransaction(editor.state, index, report.findings).scrollIntoView());
+    editor.commands.focus();
+  };
+
+  return (
+    <section aria-label="Caractères invisibles" className="space-y-2">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Caractères invisibles ({report.total})</h3>
+      {report.suspects > 0 && (
+        <div role="alert" className="border border-alert-500 bg-red-50 text-alert-600 rounded-lg p-2 text-xs">
+          <strong>
+            {report.suspects} caractère{report.suspects > 1 ? "s" : ""} suspect{report.suspects > 1 ? "s" : ""}
+          </strong>{" "}
+          : contenu caché ou inversion du sens de lecture, souvent utilisé pour dissimuler des consignes.
+          {hidden && (
+            <p className="mt-1 break-words">
+              Texte caché : « <em>{hidden}</em> »
+            </p>
+          )}
+        </div>
+      )}
+      <ul className="space-y-1">
+        {[...groups].map(([name, g]) => (
+          <li key={name}>
+            <button
+              onClick={() => select(g.first)}
+              className={`w-full flex justify-between text-sm text-left hover:underline ${g.severity === "suspect" ? "text-alert-600" : ""}`}
+            >
+              <span>{invisibleLabel(name)} <span className="text-xs text-gray-400">{name}</span></span>
+              <span className="font-medium">{g.count}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-gray-500">
+        Indice de copier-coller depuis un outil (IA ou autre), pas une preuve de rédaction par IA. Non compté dans le score.
+      </p>
+      <button onClick={clean} className="w-full text-sm py-1.5 rounded border border-secondary-500 text-secondary-600 hover:bg-purple-50">
+        Nettoyer le texte
+      </button>
+    </section>
+  );
+};
 
 export const AnalysisPanel: React.FC<{ editor: Editor | null; analysis: ReturnType<typeof useLiveAnalysis> }> = ({
   editor, analysis,
@@ -143,6 +241,10 @@ export const AnalysisPanel: React.FC<{ editor: Editor | null; analysis: ReturnTy
                 </div>
               ))}
             </section>
+
+            {result.invisibles.total > 0 && (
+              <InvisiblesSection editor={editor} report={result.invisibles} sourceText={sourceText} />
+            )}
 
             <button onClick={toggleVisible} className="w-full text-sm py-1.5 rounded border border-gray-300 hover:bg-gray-50">
               {visible ? "Masquer les marqueurs" : "Afficher les marqueurs"}

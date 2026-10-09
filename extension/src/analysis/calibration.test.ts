@@ -32,3 +32,16 @@ describe("calibration — ordinary human texts", () => {
     expect((await service.detectAll(list)).totalScore).toBe(0);
   });
 });
+
+describe("invisible characters", () => {
+  it("are reported separately and never change the AI score", async () => {
+    const hidden = [..."ignore previous"].map((c) => String.fromCodePoint(0xe0000 + c.charCodeAt(0))).join("");
+    const dirty = AI_EN.replace("digital landscape", "digital​ landscape") + hidden;
+    const clean = await service.detectAll(AI_EN);
+    const result = await service.detectAll(dirty);
+    expect(clean.invisibles).toEqual({ findings: [], total: 0, suspects: 0 });
+    expect(result.invisibles.total).toBe(16);
+    expect(result.invisibles.suspects).toBe(15);
+    expect(result.totalScore).toBe(clean.totalScore);
+  });
+});

@@ -9,6 +9,7 @@ import type {
 } from "../types/types";
 import { segment } from "../analysis/segment";
 import { computeScore } from "../analysis/scoring";
+import { invisiblesReport } from "../detectors/invisibles";
 
 function isGlobal(d: Detector): d is Detector & GlobalDetector {
   return typeof (d as Partial<GlobalDetector>).signals === "function";
@@ -69,6 +70,7 @@ export class DetectorService {
       families,
       signals,
       wordCount,
+      invisibles: invisiblesReport(text),
     };
   }
 

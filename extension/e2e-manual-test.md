@@ -37,6 +37,17 @@ Texte : coller un paragraphe d'IA typique (4 paragraphes réguliers, connecteurs
 - [ ] Texte humain varié → score nettement plus bas, rythme « ok ».
 - [ ] Document vide → « Écrivez ou collez du texte pour l'analyser. »
 
+
+## D bis. Caractères invisibles
+Texte piégé : une phrase anglaise avec espace insécable (« The model »), un ZWSP au milieu d'un mot, et du texte caché en caractères tag (outil en ligne « ASCII smuggler »).
+- [ ] Badges violets (ZWSP, NBSP) et rouge (⚠ TAG) dans le texte, sans le modifier.
+- [ ] Section « Caractères invisibles » : décompte par type, bandeau rouge avec le texte caché décodé.
+- [ ] Texte français bien composé (« Oui », « dit-il ! », espace fine avant « : ») et émojis composés → rien de signalé.
+- [ ] Clic sur un type → sélection de la première occurrence.
+- [ ] « Nettoyer le texte » → caractères retirés, typographie française conservée ; Ctrl+Z rétablit tout d'un coup.
+- [ ] Score IA identique avant et après nettoyage.
+- [ ] Popup : « Caractères invisibles N (dont X suspects) » sous le score, en rouge si suspect.
+- [ ] Impression : aucun badge.
 ## E. Documents
 - [ ] « ✓ Enregistré » après modification ; rechargement → contenu et images intacts.
 - [ ] Nouveau, ouvrir, renommer, supprimer (confirmation intégrée, pas de boîte native).
