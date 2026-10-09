@@ -41,3 +41,10 @@ describe("RhythmDetector", () => {
     expect(d.family).toBe("regularity");
   });
 });
+
+describe("RhythmDetector — short texts", () => {
+  it("is insufficient under 30 words even with 5+ lines (shopping list)", () => {
+    const t = ["Courses", "Lait demi-écrémé bio", "Pain complet", "Six œufs frais", "Tomates cerises", "Beurre doux", "Café moulu"].join("\n");
+    expect(signal(t).status).toBe("insufficient");
+  });
+});

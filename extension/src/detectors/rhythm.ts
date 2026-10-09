@@ -1,7 +1,7 @@
 import type { Detection, Detector, GlobalDetector, GlobalSignal, SignalFamily } from "../types/types";
 import type { Segmented } from "../analysis/segment";
 import { formatFr, mean, ramp, std } from "../analysis/stats";
-import { ALERT_SCORE, RHYTHM_AI, RHYTHM_BAND, RHYTHM_HUMAN, RHYTHM_MIN_SENTENCES } from "../analysis/thresholds";
+import { ALERT_SCORE, MIN_WORDS_DENSITY, RHYTHM_AI, RHYTHM_BAND, RHYTHM_HUMAN, RHYTHM_MIN_SENTENCES } from "../analysis/thresholds";
 
 /** Variabilité du rythme (burstiness) : B = (σ − μ) / (σ + μ) sur la longueur des phrases. */
 export class RhythmDetector implements Detector, GlobalDetector {
@@ -19,7 +19,8 @@ export class RhythmDetector implements Detector, GlobalDetector {
     const mu = mean(lengths);
     const sigma = std(lengths);
     const b = sigma + mu > 0 ? (sigma - mu) / (sigma + mu) : 0;
-    const insufficient = sentences.length < RHYTHM_MIN_SENTENCES;
+    // Une liste courte (titres, lignes de quelques mots) n'a pas de « rythme » mesurable
+    const insufficient = sentences.length < RHYTHM_MIN_SENTENCES || seg.words.length < MIN_WORDS_DENSITY;
     const score = insufficient ? 0 : ramp(b, RHYTHM_HUMAN, RHYTHM_AI);
     return [
       {

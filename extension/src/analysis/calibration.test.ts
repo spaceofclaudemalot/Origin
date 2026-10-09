@@ -25,3 +25,10 @@ describe("calibration", () => {
   });
 
 });
+
+describe("calibration — ordinary human texts", () => {
+  it("does not score a short shopping list", async () => {
+    const list = ["Courses", "Lait demi-écrémé bio", "Pain complet", "Six œufs frais", "Tomates cerises", "Beurre doux", "Café moulu"].join("\n");
+    expect((await service.detectAll(list)).totalScore).toBe(0);
+  });
+});
