@@ -1,5 +1,5 @@
 import type { Detection, Detector, GlobalDetector, GlobalSignal, SignalFamily } from "../types/types";
-import { segment, type Segmented } from "../analysis/segment";
+import { countWordsIn, type Segmented } from "../analysis/segment";
 import { formatFr, ramp, wordBoundary } from "../analysis/stats";
 import { CONNECTOR_ALERT_RATIO, CONNECTOR_BASELINE, CONNECTOR_MAX_RATIO, MIN_WORDS_DENSITY } from "../analysis/thresholds";
 
@@ -47,9 +47,8 @@ function findConnectors(text: string): Array<{ start: number; end: number; text:
   return [...text.matchAll(PATTERN)].map((m) => ({ start: m.index!, end: m.index! + m[0].length, text: m[0] }));
 }
 
-function measure(text: string, seg: Segmented) {
+function measure(text: string, words: number) {
   const found = findConnectors(text);
-  const words = seg.words.length;
   const ratio = words ? (found.length / words) * 100 / CONNECTOR_BASELINE : 0;
   return { found, words, ratio, score: ramp(ratio, 1, CONNECTOR_MAX_RATIO) };
 }
@@ -60,7 +59,7 @@ export class ConnectorDetector implements Detector, GlobalDetector {
   readonly family: SignalFamily = "connectors";
 
   async detect(text: string): Promise<Detection[]> {
-    const { found, score } = measure(text, segment(text));
+    const { found, score } = measure(text, countWordsIn(text));
     return found.map((c): Detection => ({
       id: crypto.randomUUID(),
       type: "connector",
@@ -80,7 +79,7 @@ export class ConnectorDetector implements Detector, GlobalDetector {
   }
 
   signals(text: string, seg: Segmented): GlobalSignal[] {
-    const { found, words, ratio, score } = measure(text, seg);
+    const { found, words, ratio, score } = measure(text, seg.words.length);
     const insufficient = words < MIN_WORDS_DENSITY;
     const ranges = seg.sentences
       .filter((s) => found.some((c) => c.start >= s.start && c.end <= s.end))

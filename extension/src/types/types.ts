@@ -81,6 +81,11 @@ export interface AnalysisResult {
   markerCount: number;
   categories: Record<DetectionCategory, number>;
   detections: Detection[];
+  /** Scores par famille (spec signaux §5). */
+  families: FamilyScore[];
+  /** Signaux portant sur tout le document. */
+  signals: GlobalSignal[];
+  wordCount: number;
   segments?: Array<{
     index: number;
     total: number;

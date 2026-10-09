@@ -25,8 +25,10 @@ const ABBREVIATIONS = new Set([
   "e.g", "i.e", "etc", "vs", "m", "mme", "mlle", "dr", "mr", "mrs", "ms", "st", "cf", "ex", "p", "env", "no",
 ]);
 
+const SPACES = new Set([" ", "\t", "\r", "\n", "\u00a0", "\u202f", "\u2009"]);
+
 function isSpace(c: string | undefined): boolean {
-  return c !== undefined && /\s/.test(c);
+  return c !== undefined && SPACES.has(c);
 }
 
 /**
@@ -51,6 +53,11 @@ function isBoundary(text: string, blockStart: number, dot: number, after: number
   return true;
 }
 
+/** Nombre de mots, sans découpage complet. */
+export function countWordsIn(text: string): number {
+  return text.match(WORD)?.length ?? 0;
+}
+
 export function segment(text: string): Segmented {
   const words: Span[] = [...text.matchAll(WORD)].map((m) => ({
     start: m.index!,
@@ -60,8 +67,22 @@ export function segment(text: string): Segmented {
   const sentences: Sentence[] = [];
   const paragraphs: Paragraph[] = [];
 
-  const countWords = (start: number, end: number) =>
-    words.reduce((n, w) => (w.start >= start && w.end <= end ? n + 1 : n), 0);
+  // Les mots sont triés : deux recherches dichotomiques au lieu d'un parcours complet
+  const firstAtOrAfter = (pos: number) => {
+    let lo = 0;
+    let hi = words.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (words[mid].start < pos) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
+  const countWords = (start: number, end: number) => {
+    let n = 0;
+    for (let i = firstAtOrAfter(start); i < words.length && words[i].end <= end; i++) n++;
+    return n;
+  };
 
   const pushSentence = (start: number, end: number) => {
     while (start < end && isSpace(text[start])) start++;
@@ -77,7 +98,7 @@ export function segment(text: string): Segmented {
     for (let i = blockStart; i < blockEnd; i++) {
       if (!TERMINATORS.includes(text[i])) continue;
       let j = i + 1;
-      while (j < blockEnd && (TERMINATORS + CLOSERS).includes(text[j])) j++;
+      while (j < blockEnd && (TERMINATORS.includes(text[j]) || CLOSERS.includes(text[j]))) j++;
       if (j < blockEnd && !isBoundary(text, blockStart, i, j, blockEnd)) {
         i = j - 1;
         continue;

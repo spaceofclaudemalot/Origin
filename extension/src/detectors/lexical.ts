@@ -24,23 +24,23 @@ export class LexicalDetector implements Detector {
       }
       // Frontières Unicode : « crucial » ne doit pas matcher dans « crucialité »
       const regex = wordBoundary(escapeRegex(entry.term));
-      let match: RegExpExecArray | null;
       // Recherche sur le texte d'origine (drapeau i) : toLowerCase() peut changer
       // la longueur (« İ » → 2 unités) et décaler les positions renvoyées.
-      while ((match = regex.exec(text)) !== null) {
-        const m = match; // Non-null within the loop body
+      const found = [...text.matchAll(regex)];
+      // Score calculé une fois par terme : la fréquence est le nombre d'occurrences trouvées
+      const score = this.calculateScore(entry, found.length);
+      for (const m of found) {
         const key = `${m.index}-${m.index + m[0].length}`;
         if (matches.has(key)) {
           continue; // déduplication des chevauchements (Review Focus #5)
         }
-        const score = this.calculateScore(entry, text);
         matches.set(key, {
           id: crypto.randomUUID(),
           type: "lexical",
           category: entry.category as DetectionCategory,
           text: m[0],
-          start: m.index,
-          end: m.index + m[0].length,
+          start: m.index!,
+          end: m.index! + m[0].length,
           score,
           confidence: entry.confidence,
           explanation: this.makeExplanation(entry, m[0]),
@@ -56,9 +56,8 @@ export class LexicalDetector implements Detector {
     return Array.from(matches.values()).sort((a, b) => a.start - b.start);
   }
 
-  private calculateScore(entry: LexicalEntry, text: string): number {
+  private calculateScore(entry: LexicalEntry, occurrences: number): number {
     // score = confiance pondérée par la fréquence du terme dans le texte
-    const occurrences = (text.match(wordBoundary(escapeRegex(entry.term))) || []).length;
     const frequencyFactor = 1 + Math.min(0.3, (occurrences - 1) * 0.1);
     return Math.min(100, Math.round(entry.confidence * 100 * frequencyFactor));
   }
