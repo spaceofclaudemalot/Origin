@@ -49,3 +49,9 @@ body {
 .to-marker--medium { background-color: rgba(251, 191, 36, 0.45); }
 .to-marker--high { background-color: rgba(239, 68, 68, 0.35); }
 .to-marker--focus { outline: 2px solid #4f46e5; }
+
+/* Phrases d'un signal global (rythme, paragraphes, connecteurs) */
+.to-signal {
+  text-decoration: underline dotted #7c3aed 2px;
+  text-underline-offset: 3px;
+}

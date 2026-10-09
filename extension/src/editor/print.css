@@ -28,6 +28,9 @@
     background: none !important;
     outline: none !important;
   }
+  .to-signal {
+    text-decoration: none !important;
+  }
   .sheet img,
   .sheet tr,
   .sheet blockquote {
