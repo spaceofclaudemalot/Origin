@@ -59,3 +59,36 @@ Texte piégé : une phrase anglaise avec espace insécable (« The model »), un
 Document de test : titre, gras, couleur, surlignage, liste imbriquée, 2 listes numérotées séparées, tableau, image, lien, marqueurs visibles.
 - [ ] Word (.docx) → nom = titre ; ouvert dans Word ou LibreOffice : tout est présent, la 2ᵉ liste numérotée recommence à 1, aucun marqueur.
 - [ ] PDF → boîte d'impression, nom = titre, A4 sans interface ni marqueurs, texte sélectionnable, pas d'image coupée entre deux pages.
+
+## G. Refonte de l'interface (0.3)
+Document de test : 4 paragraphes dont un « humain » sans marqueur, une liste, un tableau avec un marqueur dans une cellule, une image.
+
+Disposition (redimensionner la fenêtre) :
+- [ ] 1600 px : rail noir, colonne Documents épinglée, feuille, colonne Analyse.
+- [ ] 1300 px : Documents en tiroir (bouton du rail), Analyse en colonne.
+- [ ] 1000 px puis 800 px : Documents et Analyse en tiroirs ; la feuille se resserre, aucun défilement horizontal.
+- [ ] Désépingler Documents à 1600 px, recharger : la préférence est conservée. Sous 1200 px, l'épinglage est ignoré.
+- [ ] Échap ferme un tiroir et rend le focus au bouton du rail ; clic sur le voile ferme aussi.
+
+Thème :
+- [ ] Système en clair : cadre gris mat, accent orange, aucune couleur rouge/violette/bleue d'interface.
+- [ ] Système en sombre : cadre anthracite, rail noir, **feuille toujours claire**, infobulle des marqueurs claire.
+- [ ] Popup en clair et en sombre : boutons « Analyser la sélection » / « Ouvrir dans l'éditeur », jauge de score.
+
+Étiquettes en marge :
+- [ ] Une étiquette « N MARQUEUR(S) » à côté de chaque paragraphe, élément de liste ou cellule qui contient des marqueurs ; rien sur le paragraphe humain.
+- [ ] Un paragraphe avec seulement une phrase de signal en alerte : étiquette noire (« CONNECTEURS », « RYTHME »…).
+- [ ] Grand écran : étiquettes à gauche, hors de la feuille ; écran plus étroit : dans la marge gauche de la feuille.
+- [ ] Paragraphes courts consécutifs : étiquettes empilées sans se chevaucher.
+- [ ] Pendant la frappe et le défilement, les étiquettes restent alignées sur leur paragraphe ; elles se mettent à jour après l'analyse.
+- [ ] Survol d'une étiquette : contour sur les marqueurs du bloc (et phrases du signal soulignées) ; le contour disparaît à la sortie.
+- [ ] Clic sur une étiquette : le panneau (ou le tiroir) d'analyse s'ouvre sur la bonne section, la détection est dépliée et sélectionnée dans le texte.
+- [ ] « Masquer les marqueurs » (œil) masque aussi les étiquettes et les barres.
+
+Impression et export :
+- [ ] PDF en clair **et** en sombre : fond blanc, ni rail, ni colonnes, ni étiquettes, ni barres, ni marqueurs.
+- [ ] Word (.docx) : identique à la version précédente.
+
+Clavier :
+- [ ] Tab : anneau de focus orange visible sur tous les contrôles (rail, menus, étiquettes, sections repliables).
+- [ ] Menus « Exporter » et « … » : flèches haut/bas, Échap ferme et rend le focus.
