@@ -20,4 +20,29 @@ describe("performance", () => {
     times.sort((a, b) => a - b);
     expect(times[2]).toBeLessThan(50);
   });
+
+  const median = async (text: string) => {
+    await service.detectAll(text);
+    const times: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const t0 = performance.now();
+      await service.detectAll(text);
+      times.push(performance.now() - t0);
+    }
+    return times.sort((a, b) => a - b)[2];
+  };
+
+  it("stays under 50 ms on 20 000 characters pasted as a single block", async () => {
+    let text = "";
+    while (text.length < 20_000) text += AI_EN.replace(/\n/g, " ") + " ";
+    expect(await median(text)).toBeLessThan(50);
+  });
+
+  it("stays under 50 ms on many short sentences in one block", async () => {
+    expect(await median("Abc def. ".repeat(2500))).toBeLessThan(50);
+  });
+
+  it("stays under 50 ms on a very long word before a dot", async () => {
+    expect(await median("a".repeat(20_000) + " x. B")).toBeLessThan(50);
+  });
 });

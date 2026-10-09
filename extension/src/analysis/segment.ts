@@ -27,6 +27,17 @@ const ABBREVIATIONS = new Set([
 
 const SPACES = new Set([" ", "\t", "\r", "\n", "\u00a0", "\u202f", "\u2009"]);
 
+// Les abréviations reconnues font au plus 4 caractères (« mlle », « e.g ») : inutile
+// de remonter plus loin, et un balayage borné garde le découpage linéaire.
+const MAX_ABBREVIATION = 6;
+
+/** Lettres et points juste avant `dot` (au plus MAX_ABBREVIATION + 1 caractères). */
+function tokenBefore(text: string, blockStart: number, dot: number): string {
+  let k = dot;
+  while (k > blockStart && dot - k <= MAX_ABBREVIATION && (text[k - 1] === "." || /\p{L}/u.test(text[k - 1]))) k--;
+  return text.slice(k, dot);
+}
+
 function isSpace(c: string | undefined): boolean {
   return c !== undefined && SPACES.has(c);
 }
@@ -44,7 +55,7 @@ function isBoundary(text: string, blockStart: number, dot: number, after: number
   const next = text[k];
   if (!/\p{Lu}/u.test(next) && !OPENERS.includes(next)) return false;
   if (text[dot] === ".") {
-    const token = /([\p{L}.]+)$/u.exec(text.slice(blockStart, dot))?.[1];
+    const token = tokenBefore(text, blockStart, dot);
     if (token) {
       if (ABBREVIATIONS.has(token.toLowerCase())) return false;
       if (token.length === 1 && /\p{Lu}/u.test(token)) return false;
