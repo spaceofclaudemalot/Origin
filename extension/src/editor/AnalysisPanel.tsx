@@ -161,8 +161,10 @@ export const AnalysisPanel: React.FC<{
   highlighted: GlobalSignal["id"] | null;
   onHighlight: (id: GlobalSignal["id"] | null) => void;
   focus: PanelFocus | null;
+  /** La demande de focus a été appliquée : le parent l'efface pour qu'elle ne rejoue pas au remontage. */
+  onFocusSeen: () => void;
   onVisibleChange: (visible: boolean) => void;
-}> = ({ editor, analysis, highlighted, onHighlight, focus, onVisibleChange }) => {
+}> = ({ editor, analysis, highlighted, onHighlight, focus, onFocusSeen, onVisibleChange }) => {
   const { result, state, sourceText } = analysis;
   const visible = editor ? markersVisible(editor.state) : true;
   const [openId, setOpenId] = useState<string | null>(null);
@@ -192,6 +194,7 @@ export const AnalysisPanel: React.FC<{
   // Étiquette de marge cliquée : ouvrir la bonne section, y défiler, sélectionner dans le texte
   useEffect(() => {
     if (!focus || !result) return;
+    onFocusSeen();
     const first = result.detections.find((d) => d.id === focus.detectionIds[0]);
     const section = first ? familySection(FAMILY_OF_TYPE[first.type]) : focus.signals.length ? "signals" : null;
     if (!section) return;

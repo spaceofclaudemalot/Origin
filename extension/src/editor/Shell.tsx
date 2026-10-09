@@ -36,6 +36,10 @@ export function useLayout() {
     if (width >= BP.medium) savePrefs({ ...prefs, analysisShown: layout.analysis !== "column" });
     else setAnalysisOpen((o) => !o);
   };
+  /** Montre la liste sans changer la préférence d'épinglage. */
+  const openDocs = useCallback(() => {
+    if (layoutFor(window.innerWidth, readPrefs()).docs === "drawer") setDocsOpen(true);
+  }, []);
   const openAnalysis = useCallback(() => {
     if (layoutFor(window.innerWidth, readPrefs()).analysis === "drawer") setAnalysisOpen(true);
   }, []);
@@ -44,7 +48,7 @@ export function useLayout() {
     setAnalysisOpen(false);
   }, []);
 
-  return { layout, docsOpen, analysisOpen, toggleDocs, toggleAnalysis, openAnalysis, closeDrawers };
+  return { layout, docsOpen, analysisOpen, toggleDocs, toggleAnalysis, openDocs, openAnalysis, closeDrawers };
 }
 
 const RailButton: React.FC<{

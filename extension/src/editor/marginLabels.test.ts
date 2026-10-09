@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { getSchema, type JSONContent } from "@tiptap/core";
 import { baseExtensions } from "./schema";
 import { buildTextIndex } from "../analysis/positions";
-import { blockAnnotations, stackLabels } from "./marginLabels";
+import { blockAnnotations, reconcileAnnotations, stackLabels } from "./marginLabels";
 import type { Detection, GlobalSignal } from "../types/types";
 
 const schema = getSchema(baseExtensions());
@@ -85,5 +85,19 @@ describe("stackLabels", () => {
   });
   it("liste vide", () => {
     expect(stackLabels([], 4)).toEqual([]);
+  });
+});
+
+describe("reconcileAnnotations", () => {
+  const a = (pos: number) => ({ pos, markerCount: 1, maxLevel: "low" as const, detectionIds: [`d${pos}`], signals: [], signalRanges: [] });
+  const A = {}, B = {};
+  it("analyse à jour : la remplace", () => {
+    expect(reconcileAnnotations({ owner: A, list: [a(0)] }, A, [a(5)])).toEqual({ owner: A, list: [a(5)] });
+  });
+  it("analyse périmée, même éditeur : garde les étiquettes", () => {
+    expect(reconcileAnnotations({ owner: A, list: [a(0)] }, A, null)).toEqual({ owner: A, list: [a(0)] });
+  });
+  it("analyse périmée, nouvel éditeur (autre document) : aucune étiquette", () => {
+    expect(reconcileAnnotations({ owner: A, list: [a(0)] }, B, null)).toEqual({ owner: B, list: [] });
   });
 });

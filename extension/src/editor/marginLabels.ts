@@ -98,6 +98,20 @@ export function blockAnnotations(
   return [...byPos.values()].sort((x, y) => x.pos - y.pos);
 }
 
+/**
+ * Étiquettes à afficher après une analyse : `fresh` (null si l'analyse ne porte
+ * pas sur le texte courant). Un autre éditeur (autre document) repart à vide
+ * au lieu de garder les étiquettes du précédent.
+ */
+export function reconcileAnnotations<O>(
+  prev: { owner: O; list: BlockAnnotation[] },
+  owner: O,
+  fresh: BlockAnnotation[] | null,
+): { owner: O; list: BlockAnnotation[] } {
+  if (fresh) return { owner, list: fresh };
+  return owner === prev.owner ? prev : { owner, list: [] };
+}
+
 /** Positions verticales sans chevauchement : ordre conservé, décalage vers le bas. */
 export function stackLabels(items: Array<{ top: number; height: number }>, gap: number): number[] {
   const out: number[] = [];

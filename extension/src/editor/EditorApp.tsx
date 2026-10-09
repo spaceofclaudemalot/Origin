@@ -175,6 +175,7 @@ export const EditorApp: React.FC = () => {
           highlighted={highlighted}
           onHighlight={setHighlighted}
           focus={panelFocus}
+          onFocusSeen={() => setPanelFocus(null)}
           onVisibleChange={setMarkersShown}
         />
       }
@@ -198,7 +199,7 @@ export const EditorApp: React.FC = () => {
             {(close) => (
               <>
                 <MenuItem onSelect={() => { close(); titleInput.current?.focus(); titleInput.current?.select(); }}>Renommer</MenuItem>
-                <MenuItem tone="accent" onSelect={() => { close(); setDeleteRequested(true); if (shell.layout.docs === "drawer") shell.toggleDocs(); }}>Supprimer</MenuItem>
+                <MenuItem tone="accent" onSelect={() => { close(); setDeleteRequested(true); shell.openDocs(); }}>Supprimer</MenuItem>
               </>
             )}
           </Menu>

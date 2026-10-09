@@ -3,7 +3,7 @@ import type { Editor } from "@tiptap/react";
 import type { AnalysisResult, GlobalSignal } from "../types/types";
 import { buildTextIndex, mapRanges } from "../analysis/positions";
 import { setSignalHighlight } from "./extensions/SignalHighlights";
-import { blockAnnotations, stackLabels, SIGNAL_SHORT, type BlockAnnotation } from "./marginLabels";
+import { blockAnnotations, reconcileAnnotations, stackLabels, SIGNAL_SHORT, type BlockAnnotation } from "./marginLabels";
 
 const LABEL_HEIGHT = 22;
 const LABEL_GAP = 4;
@@ -62,6 +62,7 @@ export const MarginLabels: React.FC<{
 }> = ({ editor, result, sourceText, visible, highlighted, onFocus }) => {
   const layer = useRef<HTMLDivElement>(null);
   const annotations = useRef<BlockAnnotation[]>([]);
+  const owner = useRef<Editor | null>(null);
   const [version, setVersion] = useState(0);
   const [placed, setPlaced] = useState<Placed[]>([]);
   const [gutter, setGutter] = useState(false);
@@ -70,13 +71,15 @@ export const MarginLabels: React.FC<{
 
   // Nouvelle analyse : regroupement par bloc, seulement si elle porte sur le texte courant
   useEffect(() => {
-    if (!editor || editor.isDestroyed || !result) {
-      annotations.current = [];
-    } else {
+    let fresh: BlockAnnotation[] | null = [];
+    if (editor && !editor.isDestroyed && result) {
       const index = buildTextIndex(editor.state.doc);
-      if (index.text !== sourceText) return; // une analyse plus récente va suivre
-      annotations.current = blockAnnotations(editor.state.doc, result, index);
+      // Analyse d'un autre texte (frappe en cours ou document précédent) : une plus récente va suivre
+      fresh = index.text === sourceText ? blockAnnotations(editor.state.doc, result, index) : null;
     }
+    const next = reconcileAnnotations({ owner: owner.current, list: annotations.current }, editor, fresh);
+    owner.current = next.owner;
+    annotations.current = next.list;
     setVersion((v) => v + 1);
   }, [editor, result, sourceText]);
 
