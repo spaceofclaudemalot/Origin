@@ -43,8 +43,7 @@ describe("matchCase", () => {
 });
 
 describe("createDetectorService", () => {
-  it("registers the lexical detector", async () => {
-    const result = await createDetectorService().detectAll("Furthermore, this is comprehensive.");
-    expect(result.markerCount).toBeGreaterThan(0);
+  it("registers the five detectors", () => {
+    expect(createDetectorService().getRegisteredIds()).toEqual(["lexical", "connectors", "stereotypes", "rhythm", "paragraphs"]);
   });
 });

@@ -13,7 +13,7 @@ describe("LexicalDetector", () => {
   });
 
   it("detects known lexical markers in English text", async () => {
-    const result = await detector.detect("Furthermore, this approach is comprehensive.");
+    const result = await detector.detect("We delve into this comprehensive approach.");
     expect(result.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -29,8 +29,8 @@ describe("LexicalDetector", () => {
   });
 
   it("applies language filter correctly", async () => {
-    const enOnly = await detector.detect("il convient de noter ceci", "en");
-    const frOrAny = await detector.detect("il convient de noter ceci");
+    const enOnly = await detector.detect("un enjeu primordial", "en");
+    const frOrAny = await detector.detect("un enjeu primordial");
     expect(enOnly.length).toBe(0);
     expect(frOrAny.length).toBe(1);
   });
@@ -66,22 +66,34 @@ describe("LexicalDetector", () => {
     });
   });
 
-  it("detects French discourse structure markers", async () => {
-    const result = await detector.detect("En outre, il convient de noter que cette approche permet de réussir.");
-    expect(result.length).toBeGreaterThanOrEqual(2);
-    const hasFrench = result.some((d) => d.text.toLowerCase().includes("en outre") || d.text.toLowerCase().includes("il convient"));
-    expect(hasFrench).toBe(true);
+  it("detects French vocabulary markers", async () => {
+    const result = await detector.detect("Un enjeu primordial et incontournable.");
+    expect(result.map((d) => d.text)).toEqual(["primordial", "incontournable"]);
   });
 
-  it("detects transition connectors with correct type", async () => {
-    const result = await detector.detect("Furthermore, moreover, additionally.");
-    const transitions = result.filter((d) => d.type === "connector");
-    expect(transitions.length).toBe(3);
+  it("no longer reports connectors or stock phrases (moved to their own detectors)", async () => {
+    expect(await detector.detect("Furthermore, moreover, additionally.")).toEqual([]);
+    expect(await detector.detect("En outre, il convient de noter que cette approche permet de réussir.")).toEqual([]);
+  });
+
+  it("does not match a marker inside an accented word", async () => {
+    expect(await detector.detect("La crucialité du sujet.")).toEqual([]);
+  });
+
+  it("detects added English and French terms", async () => {
+    const en = await detector.detect("A robust, seamless and holistic plan.");
+    expect(en.map((d) => d.text)).toEqual(["robust", "seamless", "holistic"]);
+    const fr = await detector.detect("C'est la pierre angulaire, incontestablement.");
+    expect(fr.map((d) => d.text)).toEqual(["pierre angulaire", "incontestablement"]);
+  });
+
+  it("belongs to the vocabulary family", () => {
+    expect(detector.family).toBe("vocabulary");
   });
 });
 describe("LexicalDetector offsets", () => {
   it("keeps offsets on the original text when lowercasing changes its length (İ)", async () => {
-    const text = "İstanbul. Furthermore, this is comprehensive.";
+    const text = "İstanbul. We delve into this comprehensive topic.";
     const result = await new LexicalDetector().detect(text);
     expect(result.length).toBeGreaterThanOrEqual(2);
     for (const d of result) {

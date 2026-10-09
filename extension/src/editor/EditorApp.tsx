@@ -3,6 +3,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import type { Extensions } from "@tiptap/core";
 import { baseExtensions } from "./schema";
 import { AiMarkers } from "./extensions/AiMarkers";
+import { SignalHighlights } from "./extensions/SignalHighlights";
 import { StoredImageWithView, insertImageFiles } from "./StoredImageView";
 import { useAutosave, type SaveStatus } from "./useAutosave";
 import { useToast } from "./Toast";
@@ -16,7 +17,7 @@ import { create, get, list, type StoredDocument } from "../storage/documents";
 import { withBackup } from "../storage/backup";
 
 export function editorExtensions(): Extensions {
-  return [...baseExtensions({ storedImage: StoredImageWithView }), AiMarkers];
+  return [...baseExtensions({ storedImage: StoredImageWithView }), AiMarkers, SignalHighlights];
 }
 
 const STATUS_LABEL: Record<SaveStatus, string> = {

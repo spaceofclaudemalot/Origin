@@ -25,13 +25,16 @@
 - [ ] Ctrl+Z / Ctrl+Y sur chaque action.
 
 ## D. Analyse
-Texte : « Furthermore, we must delve into this comprehensive topic. »
-- [ ] Surlignage ~0,5 s après la frappe ; panneau à jour.
-- [ ] Survol → infobulle (explication, suggestions).
-- [ ] Clic dans le panneau → passage sélectionné dans le texte.
+Texte : coller un paragraphe d'IA typique (4 paragraphes réguliers, connecteurs, « serves as a testament to »).
+- [ ] Surlignage ~0,5 s après la frappe ; panneau à jour (score, confiance, nombre de mots).
+- [ ] 4 familles avec barres et poids ; famille non mesurable → « texte trop court ».
+- [ ] 4 signaux globaux (connecteurs, rythme, homogénéité, phrases d'ouverture) avec valeur et seuil.
+- [ ] « Surligner les phrases » : pointillé violet ; second clic retire ; un seul signal à la fois.
+- [ ] Marqueurs groupés Vocabulaire / Connecteurs / Formulations ; survol → infobulle.
 - [ ] « → Moreover » sur « Furthermore » garde la majuscule ; Ctrl+Z rétablit.
 - [ ] Masquer / afficher les marqueurs ; le score reste.
-- [ ] Ctrl+Z ne retire pas les marqueurs (hors historique).
+- [ ] Avertissement « Indices stylistiques, pas une preuve… » visible en permanence.
+- [ ] Texte humain varié → score nettement plus bas, rythme « ok ».
 - [ ] Document vide → « Écrivez ou collez du texte pour l'analyser. »
 
 ## E. Documents
