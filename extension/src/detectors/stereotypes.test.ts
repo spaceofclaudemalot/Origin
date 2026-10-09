@@ -53,3 +53,13 @@ describe("StereotypeDetector", () => {
     expect(detector.family).toBe("stereotypes");
   });
 });
+
+describe("StereotypeDetector — word boundaries", () => {
+  it("does not match « témoigne de » inside « témoigne devant / depuis »", async () => {
+    expect(await found("Il témoigne devant le juge demain, il témoigne depuis hier.")).toEqual([]);
+  });
+
+  it("matches « témoigne d' » before a vowel", async () => {
+    expect(await found("Cela témoigne d'une grande volonté.")).toEqual(["témoigne d'"]);
+  });
+});

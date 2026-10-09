@@ -27,7 +27,7 @@ const PATTERNS: Pattern[] = [
   {
     kind: "conclusion",
     regex: new RegExp(
-      [
+      `(?<![\\p{L}\\p{N}\\p{M}])(?:${[
         "(?:serves|stands) as a testament to",
         "underscor(?:es|ing) (?:its|the) importance",
         "highlighting the (?:importance|significance)",
@@ -38,8 +38,10 @@ const PATTERNS: Pattern[] = [
         "il convient de noter",
         "il est important de souligner",
         "cette approche permet de",
-      ].join("|"),
+      ].join("|")})(?:(?![\\p{L}\\p{N}\\p{M}])|(?<=['’]))`,
       "giu",
+      // Frontières Unicode (« témoigne de » ≠ « témoigne devant ») ; une fin par
+      // apostrophe (« témoigne d'une ») est une frontière valide.
     ),
     confidence: 0.7,
   },
