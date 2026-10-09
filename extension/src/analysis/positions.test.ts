@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { getSchema, type JSONContent } from "@tiptap/core";
 import { baseExtensions } from "../editor/schema";
-import { buildTextIndex, toRanges } from "./positions";
+import { buildTextIndex, mapRange, mapRanges, toRanges } from "./positions";
 import type { Detection } from "../types/types";
 
 const schema = getSchema(baseExtensions());
@@ -101,5 +101,16 @@ describe("toRanges", () => {
     const index = buildTextIndex(docOf([p(t("abc"))]));
     const d = det(0, 1, "keep");
     expect(toRanges(index, [d])[0].detection).toBe(d);
+  });
+});
+
+describe("mapRange / mapRanges", () => {
+  it("maps plain ranges and drops invalid ones", () => {
+    const doc = docOf([p(t("Un deux")), p(t("Trois"))]);
+    const index = buildTextIndex(doc);
+    const r = mapRange(index, 3, 7)!;
+    expect(doc.textBetween(r.from, r.to)).toBe("deux");
+    expect(mapRange(index, 5, 5)).toBeNull();
+    expect(mapRanges(index, [{ start: 0, end: 2 }, { start: -1, end: 2 }, { start: 8, end: 13 }]).map((x) => doc.textBetween(x.from, x.to))).toEqual(["Un", "Trois"]);
   });
 });
