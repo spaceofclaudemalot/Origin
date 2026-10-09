@@ -14,6 +14,7 @@ import { ExportMenu } from "./ExportMenu";
 import { AnalysisPanel, type PanelFocus } from "./AnalysisPanel";
 import type { GlobalSignal } from "../types/types";
 import { MarkerTooltip } from "./MarkerTooltip";
+import { MarginLabels } from "./MarginLabelLayer";
 import { useLiveAnalysis } from "./useLiveAnalysis";
 import { create, get, list, type StoredDocument } from "../storage/documents";
 import { Shell, useLayout } from "./Shell";
@@ -111,7 +112,7 @@ export const EditorApp: React.FC = () => {
   const [deleteRequested, setDeleteRequested] = useState(false);
   const [highlighted, setHighlighted] = useState<GlobalSignal["id"] | null>(null);
   const [panelFocus, setPanelFocus] = useState<PanelFocus | null>(null);
-  const [, setMarkersShown] = useState(true); // lu par les étiquettes de marge
+  const [markersShown, setMarkersShown] = useState(true);
 
   // Nouveau document : marqueurs visibles, aucun signal surligné
   useEffect(() => {
@@ -214,7 +215,18 @@ export const EditorApp: React.FC = () => {
         <Toolbar editor={editor} />
       </div>
       <main className="flex-1 overflow-auto px-6 pb-10">
-        <div className="sheet-wrap relative w-fit max-w-full mx-auto">
+        <div className="sheet-wrap relative w-full mx-auto">
+          <MarginLabels
+            editor={editor}
+            result={analysis.result}
+            sourceText={analysis.sourceText}
+            visible={markersShown}
+            highlighted={highlighted}
+            onFocus={(a) => {
+              setPanelFocus((f) => ({ nonce: (f?.nonce ?? 0) + 1, detectionIds: a.detectionIds, signals: a.signals }));
+              shell.openAnalysis();
+            }}
+          />
           <div className="sheet">
             <EditorContent editor={editor} />
           </div>

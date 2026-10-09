@@ -8,14 +8,19 @@
   --sheet-padding: 2.5cm;
 }
 
+.sheet-wrap {
+  max-width: var(--sheet-width);
+  margin: 24px auto;
+}
+
+/* La feuille se resserre à l'écran si la place manque ; l'export garde le format A4 */
 .sheet {
-  width: var(--sheet-width);
+  width: 100%;
   min-height: 29.7cm;
   padding: var(--sheet-padding);
   background: rgb(var(--to-sheet));
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.1);
   border-radius: 4px;
-  margin: 24px auto;
   font-family: Arial, sans-serif;
   font-size: 11pt;
   line-height: 1.15;
