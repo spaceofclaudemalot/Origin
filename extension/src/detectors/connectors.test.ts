@@ -48,3 +48,15 @@ describe("ConnectorDetector", () => {
     expect(detector.family).toBe("connectors");
   });
 });
+
+describe("ConnectorDetector — non-connector uses", () => {
+  it("ignores « de plus » in comparisons and « ainsi que »", async () => {
+    const text = "Il fait de plus en plus chaud, une fois de plus. Rien de plus. Trois de plus, 3 de plus. Les chats ainsi que les chiens.";
+    expect(await detector.detect(text)).toEqual([]);
+  });
+
+  it("still detects « De plus, » and « Ainsi, » as connectors", async () => {
+    const result = await detector.detect("De plus, il pleut. Ainsi, nous restons.");
+    expect(result.map((d) => d.text)).toEqual(["De plus", "Ainsi"]);
+  });
+});

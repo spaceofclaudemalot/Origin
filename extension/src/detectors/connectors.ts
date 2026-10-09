@@ -43,8 +43,25 @@ const PATTERN = wordBoundary(
     .join("|"),
 );
 
+// « de plus » comparatif (« de plus en plus », « une fois de plus », « 3 de plus »)
+// et « ainsi que » (coordination) ne sont pas des connecteurs de transition.
+const COMPARATIVE_BEFORE = /(?:^|[^\p{L}])(?:fois|rien|pas|jamais|guère|personne|un|une|deux|trois|quatre|cinq|\d+)\s+$/iu;
+
+function isConnectorUse(text: string, start: number, end: number, matched: string): boolean {
+  const lower = matched.toLowerCase().replace(/\s+/g, " ");
+  const after = text.slice(end, end + 12);
+  if (lower === "de plus") {
+    if (/^\s+en\s+plus/i.test(after)) return false;
+    if (COMPARATIVE_BEFORE.test(text.slice(Math.max(0, start - 15), start))) return false;
+  }
+  if (lower === "ainsi" && /^\s+que\b/i.test(after)) return false;
+  return true;
+}
+
 function findConnectors(text: string): Array<{ start: number; end: number; text: string }> {
-  return [...text.matchAll(PATTERN)].map((m) => ({ start: m.index!, end: m.index! + m[0].length, text: m[0] }));
+  return [...text.matchAll(PATTERN)]
+    .map((m) => ({ start: m.index!, end: m.index! + m[0].length, text: m[0] }))
+    .filter((c) => isConnectorUse(text, c.start, c.end, c.text));
 }
 
 function measure(text: string, words: number) {
