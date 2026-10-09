@@ -15,6 +15,9 @@ import { AnalysisPanel } from "./AnalysisPanel";
 import { MarkerTooltip } from "./MarkerTooltip";
 import { useLiveAnalysis } from "./useLiveAnalysis";
 import { create, get, list, type StoredDocument } from "../storage/documents";
+import { Shell, useLayout } from "./Shell";
+import { Chip, Menu, MenuItem } from "../ui/primitives";
+import { IMore } from "../ui/icons";
 import { withBackup } from "../storage/backup";
 
 export function editorExtensions(): Extensions {
@@ -22,9 +25,9 @@ export function editorExtensions(): Extensions {
 }
 
 const STATUS_LABEL: Record<SaveStatus, string> = {
-  saved: "✓ Enregistré",
+  saved: "Enregistré",
   saving: "Enregistrement…",
-  error: "⚠ Non enregistré",
+  error: "Non enregistré · Réessayer",
 };
 
 function imageFiles(list: FileList | null | undefined): File[] {
@@ -101,6 +104,28 @@ export const EditorApp: React.FC = () => {
     });
   }, [open, toast]);
 
+  const shell = useLayout();
+  const { closeDrawers } = shell;
+  const titleInput = useRef<HTMLInputElement>(null);
+  const [deleteRequested, setDeleteRequested] = useState(false);
+
+  const openDoc = useCallback(
+    (doc: StoredDocument) => {
+      closeDrawers();
+      void open(doc);
+    },
+    [open, closeDrawers],
+  );
+
+  const newDoc = useCallback(async () => {
+    try {
+      openDoc(await create());
+    } catch (e) {
+      console.error("[TextOrigin] nouveau document:", e);
+      toast.show("Impossible de créer le document.", "error");
+    }
+  }, [openDoc, toast]);
+
   const rename = (value: string) => {
     setTitle(value);
     if (!currentId.current) return;
@@ -108,44 +133,74 @@ export const EditorApp: React.FC = () => {
     document.title = `${value.trim() || "Sans titre"} — TextOrigin`;
   };
 
+  const docs = (
+    <DocumentList
+      currentId={current?.id ?? null}
+      onOpen={openDoc}
+      onCurrentRenamed={(t) => rename(t)}
+      beforeAction={flush}
+      onNew={() => void newDoc()}
+      deleteRequested={deleteRequested}
+      onDeleteRequestSeen={() => setDeleteRequested(false)}
+      refreshKey={`${current?.id ?? ""}:${status}`}
+    />
+  );
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="no-print sticky top-0 z-20 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <DocumentList
-            currentId={current?.id ?? null}
-            onOpen={(doc) => void open(doc)}
-            onCurrentRenamed={(t) => rename(t)}
-            beforeAction={flush}
-          />
+    <Shell
+      layout={shell.layout}
+      docsOpen={shell.docsOpen}
+      analysisOpen={shell.analysisOpen}
+      onToggleDocs={shell.toggleDocs}
+      onToggleAnalysis={shell.toggleAnalysis}
+      onNewDoc={() => void newDoc()}
+      onCloseDrawers={closeDrawers}
+      docs={docs}
+      analysis={<AnalysisPanel editor={editor} analysis={analysis} />}
+    >
+      <header className="no-print px-6 pt-4 pb-3 space-y-1">
+        <div className="text-2xs text-muted">Documents <span aria-hidden="true">›</span> {title.trim() || "Sans titre"}</div>
+        <div className="flex items-center gap-2">
           <input
+            ref={titleInput}
             value={title}
             onChange={(e) => rename(e.target.value)}
             aria-label="Titre du document"
-            className="text-lg px-2 py-1 rounded border border-transparent hover:border-gray-300 focus:border-primary-500 focus:outline-none min-w-0 flex-1 max-w-md"
+            className="text-xl font-semibold bg-transparent rounded-ctl px-2 -mx-2 py-0.5 hover:bg-raised focus:bg-raised outline-none min-w-0 flex-1 max-w-xl"
           />
-          <span className={`text-xs ${status === "error" ? "text-alert-600" : "text-gray-500"}`} role="status">
-            {STATUS_LABEL[status]}
-          </span>
-          {status === "error" && (
-            <button onClick={() => void flush()} className="text-xs underline text-alert-600">
-              Réessayer
-            </button>
-          )}
+          <Menu
+            ariaLabel="Actions du document"
+            align="left"
+            buttonClassName="h-8 w-8 rounded-ctl inline-flex items-center justify-center text-muted hover:text-ink hover:bg-raised"
+            label={<IMore />}
+          >
+            {(close) => (
+              <>
+                <MenuItem onSelect={() => { close(); titleInput.current?.focus(); titleInput.current?.select(); }}>Renommer</MenuItem>
+                <MenuItem tone="accent" onSelect={() => { close(); setDeleteRequested(true); if (shell.layout.docs === "drawer") shell.toggleDocs(); }}>Supprimer</MenuItem>
+              </>
+            )}
+          </Menu>
           <div className="flex-1" />
+          {status === "error" ? (
+            <Chip as="button" tone="accent" onClick={() => void flush()} role="status">{STATUS_LABEL.error}</Chip>
+          ) : (
+            <Chip className="bg-transparent text-muted font-medium" role="status">{STATUS_LABEL[status]}</Chip>
+          )}
           <ExportMenu editor={editor} title={title} />
         </div>
-        <Toolbar editor={editor} />
       </header>
-      <div className="flex flex-1 min-h-0">
-        <main className="flex-1 overflow-auto">
+      <div className="no-print px-6 pb-3">
+        <Toolbar editor={editor} />
+      </div>
+      <main className="flex-1 overflow-auto px-6 pb-10">
+        <div className="sheet-wrap relative w-fit max-w-full mx-auto">
           <div className="sheet">
             <EditorContent editor={editor} />
           </div>
-        </main>
-        <AnalysisPanel editor={editor} analysis={analysis} />
-        <MarkerTooltip editor={editor} result={analysis.result} sourceText={analysis.sourceText} />
-      </div>
-    </div>
+        </div>
+      </main>
+      <MarkerTooltip editor={editor} result={analysis.result} sourceText={analysis.sourceText} />
+    </Shell>
   );
 };

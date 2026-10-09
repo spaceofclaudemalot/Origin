@@ -14,8 +14,18 @@
   .no-print {
     display: none !important;
   }
-  main {
+  main,
+  .to-shell,
+  .to-docarea {
+    display: block !important;
+    height: auto !important;
     overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+    border-radius: 0 !important;
+  }
+  .sheet-wrap {
+    margin: 0 !important;
   }
   .sheet {
     width: auto;
