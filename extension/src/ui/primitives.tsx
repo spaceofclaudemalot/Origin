@@ -98,7 +98,7 @@ export const Collapsible: React.FC<{
   const bodyId = useId();
   const toggle = () => {
     const next = !isOpen;
-    if (open === undefined) setOwn(next);
+    setOwn(next);
     try {
       localStorage.setItem(sectionKey(id), next ? "1" : "0");
     } catch {

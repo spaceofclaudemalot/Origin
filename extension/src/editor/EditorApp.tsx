@@ -11,7 +11,8 @@ import { useToast } from "./Toast";
 import { Toolbar } from "./Toolbar";
 import { DocumentList } from "./DocumentList";
 import { ExportMenu } from "./ExportMenu";
-import { AnalysisPanel } from "./AnalysisPanel";
+import { AnalysisPanel, type PanelFocus } from "./AnalysisPanel";
+import type { GlobalSignal } from "../types/types";
 import { MarkerTooltip } from "./MarkerTooltip";
 import { useLiveAnalysis } from "./useLiveAnalysis";
 import { create, get, list, type StoredDocument } from "../storage/documents";
@@ -108,6 +109,16 @@ export const EditorApp: React.FC = () => {
   const { closeDrawers } = shell;
   const titleInput = useRef<HTMLInputElement>(null);
   const [deleteRequested, setDeleteRequested] = useState(false);
+  const [highlighted, setHighlighted] = useState<GlobalSignal["id"] | null>(null);
+  const [panelFocus, setPanelFocus] = useState<PanelFocus | null>(null);
+  const [, setMarkersShown] = useState(true); // lu par les étiquettes de marge
+
+  // Nouveau document : marqueurs visibles, aucun signal surligné
+  useEffect(() => {
+    setMarkersShown(true);
+    setHighlighted(null);
+    setPanelFocus(null);
+  }, [editor]);
 
   const openDoc = useCallback(
     (doc: StoredDocument) => {
@@ -156,7 +167,16 @@ export const EditorApp: React.FC = () => {
       onNewDoc={() => void newDoc()}
       onCloseDrawers={closeDrawers}
       docs={docs}
-      analysis={<AnalysisPanel editor={editor} analysis={analysis} />}
+      analysis={
+        <AnalysisPanel
+          editor={editor}
+          analysis={analysis}
+          highlighted={highlighted}
+          onHighlight={setHighlighted}
+          focus={panelFocus}
+          onVisibleChange={setMarkersShown}
+        />
+      }
     >
       <header className="no-print px-6 pt-4 pb-3 space-y-1">
         <div className="text-2xs text-muted">Documents <span aria-hidden="true">›</span> {title.trim() || "Sans titre"}</div>

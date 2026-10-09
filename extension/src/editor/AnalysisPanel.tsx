@@ -8,6 +8,9 @@ import { buildTextIndex, mapRange, mapRanges } from "../analysis/positions";
 import { cleanupTransaction } from "./invisibleCleanup";
 import { FAMILY_LABEL, FAMILY_OF_TYPE } from "../analysis/scoring";
 import type { useLiveAnalysis } from "./useLiveAnalysis";
+import { Button, Card, Chip, Collapsible, IconButton } from "../ui/primitives";
+import { ScoreGauge } from "../ui/ScoreGauge";
+import { IEye, IEyeOff } from "../ui/icons";
 
 export const CATEGORY_LABEL: Record<DetectionCategory, string> = {
   "lexical-marker": "Marqueur lexical",
@@ -17,16 +20,20 @@ export const CATEGORY_LABEL: Record<DetectionCategory, string> = {
   anomaly: "Anomalie stylistique",
 };
 
-const LEVEL_DOT = { low: "bg-blue-400", medium: "bg-amber-400", high: "bg-red-500" } as const;
-const CONFIDENCE_LABEL: Record<string, string> = { high: "Haute", medium: "Moyenne", low: "Faible" };
+const LEVEL_DOT = { low: "bg-accent/30", medium: "bg-accent/60", high: "bg-accent" } as const;
+const CONFIDENCE_LABEL: Record<string, string> = { high: "haute", medium: "moyenne", low: "faible" };
 const STATUS_ICON: Record<GlobalSignal["status"], string> = { ok: "✓", alert: "⚠", insufficient: "⋯" };
 const MARKER_FAMILIES: SignalFamily[] = ["vocabulary", "connectors", "stereotypes"];
+const ICON = "w-[18px] h-[18px]";
 
 export const WARNING =
   "Indices stylistiques, pas une preuve. Les textes académiques formels et ceux d'auteurs non natifs produisent des faux positifs.";
 
-export function scoreColor(score: number): string {
-  return score < 21 ? "text-natural-500" : score < 41 ? "text-primary-500" : score < 61 ? "text-verify-500" : "text-alert-500";
+/** Demande venue d'une étiquette de marge : montrer ces détections ou ces signaux. */
+export interface PanelFocus {
+  nonce: number;
+  detectionIds: string[];
+  signals: GlobalSignal["id"][];
 }
 
 /** Remplace le passage marqué ; transaction normale, donc annulable par Ctrl+Z. */
@@ -107,57 +114,65 @@ const InvisiblesSection: React.FC<{ editor: Editor | null; report: InvisibleRepo
   };
 
   return (
-    <section aria-label="Caractères invisibles" className="space-y-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Caractères invisibles ({report.total})</h3>
-      {report.suspects > 0 && (
-        <div role="alert" className="border border-alert-500 bg-red-50 text-alert-600 rounded-lg p-2 text-xs">
-          <strong>
-            {report.suspects} caractère{report.suspects > 1 ? "s" : ""} suspect{report.suspects > 1 ? "s" : ""}
-          </strong>{" "}
-          : contenu caché ou inversion du sens de lecture, souvent utilisé pour dissimuler des consignes.
-          {hidden && (
-            <p className="mt-1 break-words">
-              Texte caché : « <em>{hidden}</em> »
-            </p>
-          )}
-        </div>
-      )}
-      <ul className="space-y-1">
-        {[...groups].map(([name, g]) => (
-          <li key={name}>
-            <button
-              onClick={() => select(g.first)}
-              className={`w-full flex justify-between text-sm text-left hover:underline ${g.severity === "suspect" ? "text-alert-600" : ""}`}
-            >
-              <span>{invisibleLabel(name)} <span className="text-xs text-gray-400">{name}</span></span>
-              <span className="font-medium">{g.count}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <p className="text-xs text-gray-500">
-        Indice de copier-coller depuis un outil (IA ou autre), pas une preuve de rédaction par IA. Non compté dans le score.
-      </p>
-      <button onClick={clean} className="w-full text-sm py-1.5 rounded border border-secondary-500 text-secondary-600 hover:bg-purple-50">
-        Nettoyer le texte
-      </button>
-    </section>
+    <Collapsible id="invisibles" title="Caractères invisibles" count={report.total}>
+      <div className="space-y-2">
+        {report.suspects > 0 && (
+          <div role="alert" className="rounded-card border border-accent/50 bg-accent/10 shadow-[0_0_12px_rgb(var(--to-accent)/0.25)] p-2.5 text-2xs">
+            <strong className="text-accent">
+              {report.suspects} caractère{report.suspects > 1 ? "s" : ""} suspect{report.suspects > 1 ? "s" : ""}
+            </strong>{" "}
+            : contenu caché ou inversion du sens de lecture, souvent utilisé pour dissimuler des consignes.
+            {hidden && (
+              <p className="mt-1 break-words">
+                Texte caché : « <em>{hidden}</em> »
+              </p>
+            )}
+          </div>
+        )}
+        <ul className="space-y-0.5">
+          {[...groups].map(([name, g]) => (
+            <li key={name}>
+              <button
+                onClick={() => select(g.first)}
+                className={`w-full flex justify-between gap-2 text-[13px] text-left rounded-ctl px-2 py-1 hover:bg-raised ${g.severity === "suspect" ? "text-accent" : ""}`}
+              >
+                <span>{invisibleLabel(name)} <span className="text-2xs text-muted">{name}</span></span>
+                <span className="font-medium">{g.count}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="text-2xs text-muted">
+          Indice de copier-coller depuis un outil (IA ou autre), pas une preuve de rédaction par IA. Non compté dans le score.
+        </p>
+        <Button variant="secondary" className="w-full" onClick={clean}>
+          Nettoyer le texte
+        </Button>
+      </div>
+    </Collapsible>
   );
 };
 
-export const AnalysisPanel: React.FC<{ editor: Editor | null; analysis: ReturnType<typeof useLiveAnalysis> }> = ({
-  editor, analysis,
-}) => {
+const familySection = (f: SignalFamily) => `fam-${f}`;
+
+export const AnalysisPanel: React.FC<{
+  editor: Editor | null;
+  analysis: ReturnType<typeof useLiveAnalysis>;
+  highlighted: GlobalSignal["id"] | null;
+  onHighlight: (id: GlobalSignal["id"] | null) => void;
+  focus: PanelFocus | null;
+  onVisibleChange: (visible: boolean) => void;
+}> = ({ editor, analysis, highlighted, onHighlight, focus, onVisibleChange }) => {
   const { result, state, sourceText } = analysis;
-  const [visible, setVisible] = useState(true);
+  const visible = editor ? markersVisible(editor.state) : true;
   const [openId, setOpenId] = useState<string | null>(null);
-  const [highlighted, setHighlighted] = useState<GlobalSignal["id"] | null>(null);
+  // Sections ouvertes à la demande d'une étiquette de marge (sinon état mémorisé)
+  const [forced, setForced] = useState<Record<string, true>>({});
 
   // Nouveau document (nouvel éditeur) : état d'affichage remis à zéro
   useEffect(() => {
-    setVisible(true);
-    setHighlighted(null);
     setOpenId(null);
+    setForced({});
   }, [editor]);
 
   // Le surlignage suit chaque nouvelle analyse, ou disparaît si le signal n'est plus en alerte
@@ -165,144 +180,185 @@ export const AnalysisPanel: React.FC<{ editor: Editor | null; analysis: ReturnTy
     if (!editor || editor.isDestroyed) return;
     const signal = highlighted ? result?.signals.find((s) => s.id === highlighted) : undefined;
     if (!signal || signal.status !== "alert") {
-      if (highlighted) setHighlighted(null);
+      if (highlighted) onHighlight(null);
       editor.view.dispatch(setSignalHighlight(editor.state, null));
       return;
     }
     const index = buildTextIndex(editor.state.doc);
     if (index.text !== sourceText) return; // une analyse plus récente va suivre
     editor.view.dispatch(setSignalHighlight(editor.state, mapRanges(index, signal.ranges)));
-  }, [editor, result, sourceText, highlighted]);
+  }, [editor, result, sourceText, highlighted, onHighlight]);
+
+  // Étiquette de marge cliquée : ouvrir la bonne section, y défiler, sélectionner dans le texte
+  useEffect(() => {
+    if (!focus || !result) return;
+    const first = result.detections.find((d) => d.id === focus.detectionIds[0]);
+    const section = first ? familySection(FAMILY_OF_TYPE[first.type]) : focus.signals.length ? "signals" : null;
+    if (!section) return;
+    setForced((f) => ({ ...f, [section]: true }));
+    if (first) {
+      setOpenId(first.id);
+      if (editor) reveal(editor, first);
+    }
+    const target = first ? `to-det-${first.id}` : `to-sig-${focus.signals[0]}`;
+    requestAnimationFrame(() => document.getElementById(target)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+  }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Section contrôlée tant qu'une étiquette l'a ouverte ; un clic de l'utilisateur rend la main. */
+  const sectionProps = (id: string) => ({
+    id,
+    open: forced[id],
+    onOpenChange: () =>
+      setForced((f) => {
+        const { [id]: _, ...rest } = f;
+        return rest;
+      }),
+  });
 
   const toggleVisible = () => {
     if (!editor) return;
     const next = !markersVisible(editor.state);
     editor.view.dispatch(setMarkersVisible(editor.state, next));
-    setVisible(next);
+    onVisibleChange(next);
   };
 
   const detections = [...(result?.detections ?? [])].sort((a, b) => a.start - b.start);
+  const alerts = result?.signals.filter((s) => s.status === "alert").length ?? 0;
 
   return (
-    <aside className="no-print w-80 shrink-0 border-l border-gray-200 bg-white overflow-auto" aria-label="Analyse">
-      <div className="p-4 space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Analyse</h2>
+    <div className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xs font-semibold uppercase tracking-wider text-muted">Analyse</h2>
+        <IconButton label={visible ? "Masquer les marqueurs" : "Afficher les marqueurs"} onClick={toggleVisible} disabled={!editor}>
+          {visible ? <IEye className={ICON} /> : <IEyeOff className={ICON} />}
+        </IconButton>
+      </div>
 
-        {state === "empty" && <p className="text-sm text-gray-500">Écrivez ou collez du texte pour l'analyser.</p>}
-        {state === "error" && <p className="text-sm text-alert-600" role="alert">Analyse indisponible. Nouvel essai à la prochaine modification.</p>}
-
+      <Card className="p-4">
+        {state === "empty" && <p className="text-[13px] text-muted">Écrivez ou collez du texte pour l'analyser.</p>}
+        {state === "error" && (
+          <p className="text-[13px] text-accent" role="alert">Analyse indisponible. Nouvel essai à la prochaine modification.</p>
+        )}
         {result && state !== "empty" && (
-          <>
-            <div className="text-center">
-              <div className={`text-4xl font-bold ${scoreColor(result.totalScore)}`}>{result.totalScore}<span className="text-base text-gray-400">/100</span></div>
-              <div className="text-xs text-gray-500 uppercase tracking-wide">AI Marker Score</div>
-              <div className="text-xs text-gray-500 mt-1">
-                Confiance : {CONFIDENCE_LABEL[result.confidence] ?? result.confidence} · {result.wordCount} mots
+          <ScoreGauge
+            score={result.totalScore}
+            caption={
+              <>
+                {result.wordCount} mots · confiance {CONFIDENCE_LABEL[result.confidence] ?? result.confidence}
                 {state === "running" && " · mise à jour…"}
-              </div>
-            </div>
+              </>
+            }
+          />
+        )}
+      </Card>
 
-            <section aria-label="Familles">
-              <ul className="space-y-1.5">
-                {result.families.map((f) => (
-                  <li key={f.family} className={`text-sm ${f.measurable ? "" : "text-gray-400"}`}>
-                    <div className="flex justify-between">
-                      <span>{FAMILY_LABEL[f.family]} <span className="text-xs text-gray-400">({Math.round(f.weight * 100)} %)</span></span>
-                      <span className="font-medium">{f.measurable ? f.score : "texte trop court"}</span>
+      {result && state !== "empty" && (
+        <>
+          <Collapsible id="families" title="Familles">
+            <ul className="space-y-2">
+              {result.families.map((f) => (
+                <li key={f.family} className={`text-[13px] ${f.measurable ? "" : "text-muted"}`}>
+                  <div className="flex justify-between">
+                    <span>
+                      {FAMILY_LABEL[f.family]} <span className="text-2xs text-muted">({Math.round(f.weight * 100)} %)</span>
+                    </span>
+                    <span className="font-medium">{f.measurable ? f.score : "texte trop court"}</span>
+                  </div>
+                  {f.measurable && (
+                    <div className="h-1.5 mt-1 bg-line rounded-full" aria-hidden="true">
+                      <div className="h-1.5 rounded-full bg-ink/70" style={{ width: `${f.score}%` }} />
                     </div>
-                    {f.measurable && (
-                      <div className="h-1.5 bg-gray-100 rounded" aria-hidden="true">
-                        <div className="h-1.5 rounded bg-primary-500" style={{ width: `${f.score}%` }} />
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </section>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Collapsible>
 
-            <section aria-label="Signaux globaux" className="space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Signaux globaux</h3>
+          <Collapsible {...sectionProps("signals")} title="Signaux globaux" count={alerts}>
+            <div className="space-y-2">
               {result.signals.map((s) => (
-                <div key={s.id} className={`border rounded-lg p-2 text-sm ${s.status === "alert" ? "border-verify-400 bg-orange-50" : ""}`}>
+                <div
+                  key={s.id}
+                  id={`to-sig-${s.id}`}
+                  className={`rounded-card border p-2.5 text-[13px] ${s.status === "alert" ? "border-accent/50 bg-accent/5" : "border-line"}`}
+                >
                   <div className="flex items-center gap-2">
-                    <span aria-label={s.status}>{STATUS_ICON[s.status]}</span>
+                    <span aria-label={s.status} className={s.status === "alert" ? "text-accent" : "text-muted"}>
+                      {STATUS_ICON[s.status]}
+                    </span>
                     <span className="font-medium">{s.label}</span>
                   </div>
-                  <div className="text-xs text-gray-600 mt-0.5">{s.status === "insufficient" ? "Texte trop court" : s.display}</div>
-                  <p className="text-xs text-gray-500 mt-1">{s.explanation}</p>
+                  <div className="text-2xs text-muted mt-0.5">{s.status === "insufficient" ? "Texte trop court" : s.display}</div>
+                  <p className="text-2xs text-muted mt-1">{s.explanation}</p>
                   {s.status === "alert" && (
-                    <button
-                      onClick={() => setHighlighted(highlighted === s.id ? null : s.id)}
-                      className="mt-1 text-xs underline text-secondary-600"
-                    >
+                    <Chip as="button" tone="outline" className="mt-2" onClick={() => onHighlight(highlighted === s.id ? null : s.id)}>
                       {highlighted === s.id ? "Retirer le surlignage" : "Surligner les phrases"}
-                    </button>
+                    </Chip>
                   )}
                 </div>
               ))}
-            </section>
+            </div>
+          </Collapsible>
 
-            {result.invisibles.total > 0 && (
-              <InvisiblesSection editor={editor} report={result.invisibles} sourceText={sourceText} />
-            )}
+          {result.invisibles.total > 0 && (
+            <InvisiblesSection editor={editor} report={result.invisibles} sourceText={sourceText} />
+          )}
 
-            <button onClick={toggleVisible} className="w-full text-sm py-1.5 rounded border border-gray-300 hover:bg-gray-50">
-              {visible ? "Masquer les marqueurs" : "Afficher les marqueurs"}
-            </button>
-
-            {detections.length === 0 ? (
-              <p className="text-sm text-gray-500">Aucun marqueur détecté.</p>
-            ) : (
-              MARKER_FAMILIES.map((family) => {
-                const list = detections.filter((d) => FAMILY_OF_TYPE[d.type] === family);
-                if (!list.length) return null;
-                return (
-                  <section key={family} aria-label={FAMILY_LABEL[family]}>
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                      {FAMILY_LABEL[family]} ({list.length})
-                    </h3>
-                    <ul className="space-y-2">
-                      {list.map((d) => {
-                        const original = sourceText.slice(d.start, d.end) || d.text;
-                        return (
-                          <li key={d.id} className="border rounded-lg p-2 text-sm">
-                            <button
-                              className="w-full text-left flex items-center gap-2"
-                              onClick={() => { if (editor) reveal(editor, d); setOpenId(openId === d.id ? null : d.id); }}
-                            >
-                              <span className={`w-2 h-2 rounded-full ${LEVEL_DOT[markerLevel(d.score)]}`} aria-hidden="true" />
-                              <span className="font-medium truncate">« {original} »</span>
-                            </button>
-                            {openId === d.id && (
-                              <div className="mt-2 space-y-2">
-                                <p className="text-xs text-gray-600">{d.explanation}</p>
-                                <div className="flex flex-wrap gap-1">
-                                  {d.suggestions.map((s) => (
-                                    <button
-                                      key={s.text}
-                                      title={s.reason}
-                                      onClick={() => editor && applySuggestion(editor, d, original, s.text)}
-                                      className="text-xs px-2 py-1 rounded bg-primary-50 text-primary-700 hover:bg-primary-100"
-                                    >
-                                      {s.text ? `→ ${matchCase(original, s.text)}` : "Supprimer"}
-                                    </button>
-                                  ))}
-                                </div>
+          {detections.length === 0 ? (
+            <p className="text-[13px] text-muted">Aucun marqueur détecté.</p>
+          ) : (
+            MARKER_FAMILIES.map((family) => {
+              const list = detections.filter((d) => FAMILY_OF_TYPE[d.type] === family);
+              if (!list.length) return null;
+              return (
+                <Collapsible key={family} {...sectionProps(familySection(family))} title={FAMILY_LABEL[family]} count={list.length}>
+                  <ul className="space-y-1.5">
+                    {list.map((d) => {
+                      const original = sourceText.slice(d.start, d.end) || d.text;
+                      return (
+                        <li key={d.id} id={`to-det-${d.id}`} className="rounded-card bg-raised border border-line p-2.5 text-[13px]">
+                          <button
+                            className="w-full text-left flex items-center gap-2"
+                            onClick={() => {
+                              if (editor) reveal(editor, d);
+                              setOpenId(openId === d.id ? null : d.id);
+                            }}
+                          >
+                            <span className={`w-2 h-2 shrink-0 rounded-full ${LEVEL_DOT[markerLevel(d.score)]}`} aria-hidden="true" />
+                            <span className="font-medium truncate">« {original} »</span>
+                          </button>
+                          {openId === d.id && (
+                            <div className="mt-2 space-y-2">
+                              <p className="text-2xs text-muted">{d.explanation}</p>
+                              <div className="flex flex-wrap gap-1">
+                                {d.suggestions.map((s) => (
+                                  <Chip
+                                    as="button"
+                                    key={s.text}
+                                    title={s.reason}
+                                    tone={s.text ? "accent" : "outline"}
+                                    onClick={() => editor && applySuggestion(editor, d, original, s.text)}
+                                  >
+                                    {s.text ? `→ ${matchCase(original, s.text)}` : "Supprimer"}
+                                  </Chip>
+                                ))}
                               </div>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </section>
-                );
-              })
-            )}
-          </>
-        )}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Collapsible>
+              );
+            })
+          )}
+        </>
+      )}
 
-        <p className="text-xs text-gray-500 border-t pt-3" role="note">{WARNING}</p>
-      </div>
-    </aside>
+      <p className="rounded-card bg-raised/70 border border-line p-3 text-2xs text-muted" role="note">
+        {WARNING}
+      </p>
+    </div>
   );
 };

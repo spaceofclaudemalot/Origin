@@ -29,11 +29,11 @@ const StoredImageComponent: React.FC<NodeViewProps> = ({ node }) => {
   return (
     <NodeViewWrapper data-drag-handle="">
       {missing ? (
-        <div className="border border-dashed border-gray-400 text-gray-500 text-xs p-4 text-center">Image introuvable</div>
+        <div className="border border-dashed border-[#8a857c] text-[#6b665e] text-xs p-4 text-center">Image introuvable</div>
       ) : src ? (
         <img src={src} alt={node.attrs.alt} width={node.attrs.width || undefined} />
       ) : (
-        <div className="bg-gray-100 animate-pulse" style={{ aspectRatio: `${node.attrs.width || 4} / ${node.attrs.height || 3}` }} />
+        <div className="bg-[#ebe8e2] animate-pulse" style={{ aspectRatio: `${node.attrs.width || 4} / ${node.attrs.height || 3}` }} />
       )}
     </NodeViewWrapper>
   );
