@@ -1,0 +1,33 @@
+@import "@fontsource-variable/inter";
+
+:root {
+  --to-canvas: 207 204 198;
+  --to-surface: 228 225 219;
+  --to-raised: 235 232 226;
+  --to-line: 214 210 202;
+  --to-rail: 35 35 35;
+  --to-ink: 29 29 27;
+  --to-muted: 107 102 94;
+  --to-accent: 223 88 48;
+  --to-accent-ink: 255 255 255;
+  --to-band-low: 169 184 164;
+  --to-band-mid: 185 180 170;
+  --to-band-notable: 226 161 131;
+  --to-shadow: 0 0 0;
+  --to-shadow-k: 1;
+  /* Feuille : identiques dans les deux thèmes */
+  --to-sheet: 251 250 247;
+  --to-sheet-ink: 29 29 27;
+  color-scheme: light;
+}
+
+body {
+  background: rgb(var(--to-canvas));
+  color: rgb(var(--to-ink));
+  font-family: "Inter Variable", system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--to-accent));
+  outline-offset: 2px;
+}
