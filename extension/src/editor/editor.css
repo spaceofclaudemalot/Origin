@@ -55,3 +55,23 @@ body {
   text-decoration: underline dotted #7c3aed 2px;
   text-underline-offset: 3px;
 }
+
+/* Caractères invisibles : badge rendu en CSS, le texte n'est pas modifié */
+.to-invisible {
+  background-color: rgba(124, 58, 237, 0.15);
+  border-radius: 2px;
+}
+.to-invisible::before {
+  content: attr(data-label);
+  font: 600 8px/1 system-ui, sans-serif;
+  color: #fff;
+  background: #7c3aed;
+  border-radius: 3px;
+  padding: 1px 3px;
+  margin: 0 1px;
+  vertical-align: super;
+}
+.to-invisible--suspect::before {
+  content: "⚠ " attr(data-label);
+  background: #dc2626;
+}

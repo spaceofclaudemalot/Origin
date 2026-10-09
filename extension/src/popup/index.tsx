@@ -220,6 +220,22 @@ const App: React.FC = () => {
                   {confidenceLabel(result.confidence)}
                 </span>
               </div>
+              {result.invisibles.total > 0 && (
+                <div className={result.invisibles.suspects ? "text-alert-600" : ""}>
+                  <div className="flex justify-between">
+                    <span>Caractères invisibles</span>
+                    <span className="font-medium">
+                      {result.invisibles.total}
+                      {result.invisibles.suspects > 0 && ` (dont ${result.invisibles.suspects} suspect${result.invisibles.suspects > 1 ? "s" : ""})`}
+                    </span>
+                  </div>
+                  {result.invisibles.suspects > 0 && (
+                    <p className="text-xs mt-1">
+                      Texte caché ou manipulé : ouvrez la sélection dans l'éditeur pour le voir.
+                    </p>
+                  )}
+                </div>
+              )}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
                 Score de présence de marqueurs stylistiques fréquemment
                 observés dans des textes générés par des LLM.

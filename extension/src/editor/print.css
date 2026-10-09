@@ -31,6 +31,12 @@
   .to-signal {
     text-decoration: none !important;
   }
+  .to-invisible {
+    background: none !important;
+  }
+  .to-invisible::before {
+    content: none !important;
+  }
   .sheet img,
   .sheet tr,
   .sheet blockquote {
