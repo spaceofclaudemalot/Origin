@@ -14,7 +14,6 @@ export class LexicalDetector implements Detector {
   name = "Lexical Detector";
 
   async detect(text: string, language?: "en" | "fr"): Promise<Detection[]> {
-    const lower = text.toLowerCase();
     const matches = new Map<string, Detection>(); // clef = start-end pour dédup
 
     for (const entry of LEXICAL_ENTRIES) {
@@ -25,7 +24,9 @@ export class LexicalDetector implements Detector {
       // Use word boundaries to match terms as whole words (avoid substring matches)
       const regex = new RegExp(`\\b${escaped}\\b`, "gi");
       let match: RegExpExecArray | null;
-      while ((match = regex.exec(lower)) !== null) {
+      // Recherche sur le texte d'origine (drapeau i) : toLowerCase() peut changer
+      // la longueur (« İ » → 2 unités) et décaler les positions renvoyées.
+      while ((match = regex.exec(text)) !== null) {
         const m = match; // Non-null within the loop body
         const key = `${m.index}-${m.index + m[0].length}`;
         if (matches.has(key)) {
