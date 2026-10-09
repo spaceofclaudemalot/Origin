@@ -79,6 +79,7 @@ Tous implémentent `Detector` (`detect(text) → Detection[]`). Les détecteurs 
   - EN : furthermore, moreover, additionally, in addition, consequently, therefore, however, nevertheless, thus, hence, notably, ultimately, overall.
   - FR : en outre, par ailleurs, de plus, notamment, ainsi, toutefois, néanmoins, en effet, par conséquent, dès lors, en définitive, en conclusion, enfin.
   - Correspondance par frontière de mot Unicode, insensible à la casse.
+  - Usages non connecteurs exclus (ajout après revue) : « de plus » suivi de « en plus » ou précédé de « fois », « rien », « pas », « jamais », « guère », « personne », d'un article ou d'un nombre ; « ainsi » suivi de « que ».
 - **Marqueurs** : un `Detection` par connecteur (catégorie `transition`, type `connector`). Score de la détection = score de la famille. Suggestions : supprimer, ou reformuler sans connecteur.
 - **Signal global `connector-density`** :
   - valeur = connecteurs pour 100 mots ÷ base `CONNECTOR_BASELINE = 0.6` ;
@@ -107,7 +108,7 @@ Motifs (insensibles à la casse, frontière Unicode) :
 - Longueurs des phrases en mots ; μ moyenne, σ écart-type.
 - `B = (σ − μ) / (σ + μ)`.
 - Score : 0 si B ≥ `RHYTHM_HUMAN = -0.25` ; 100 si B ≤ `RHYTHM_AI = -0.55` ; linéaire entre les deux.
-- Statut : `alert` si score ≥ 50 ; `insufficient` sous `RHYTHM_MIN_SENTENCES = 5`.
+- Statut : `alert` si score ≥ 50 ; `insufficient` sous `RHYTHM_MIN_SENTENCES = 5` phrases **ou sous `MIN_WORDS_DENSITY = 30` mots** (ajout après revue : une liste courte n'a pas de rythme mesurable et obtenait 100/100).
 - Plages : les phrases dont la longueur est à ±15 % de μ.
 - Aucun marqueur ponctuel.
 
