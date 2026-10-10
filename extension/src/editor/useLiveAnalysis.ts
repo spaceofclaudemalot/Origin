@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { AnalysisResult } from "../types/types";
-import { buildTextIndex, toRanges } from "../analysis/positions";
+import { buildTextIndex, mapRange, toRanges } from "../analysis/positions";
 import { analysisDelay, createLatestOnly } from "../analysis/live";
 import { createDetectorService } from "../analysis/service";
 import { setMarkers } from "./extensions/AiMarkers";
+import { setInvisibleMarks, type InvisibleMark } from "./extensions/InvisibleMarks";
 
 export type AnalysisState = "empty" | "running" | "ready" | "error";
 
@@ -31,6 +32,7 @@ export function useLiveAnalysis(editor: Editor | null) {
       if (!index.text.trim()) {
         latest.cancel();
         editor.view.dispatch(setMarkers(editor.state, []));
+        editor.view.dispatch(setInvisibleMarks(editor.state, []));
         setResult(null);
         setSourceText("");
         setState("empty");
@@ -43,6 +45,11 @@ export function useLiveAnalysis(editor: Editor | null) {
         const fresh = buildTextIndex(editor.state.doc);
         if (fresh.text !== index.text) return; // le texte a changé : une autre analyse suit
         editor.view.dispatch(setMarkers(editor.state, toRanges(fresh, value.detections)));
+        const marks = value.invisibles.findings.flatMap((f): InvisibleMark[] => {
+          const r = mapRange(fresh, f.start, f.end);
+          return r ? [{ ...r, label: f.label, severity: f.severity }] : [];
+        });
+        editor.view.dispatch(setInvisibleMarks(editor.state, marks));
         setResult(value);
         setSourceText(fresh.text);
         setState("ready");

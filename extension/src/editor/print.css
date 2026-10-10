@@ -4,14 +4,28 @@
 }
 
 @media print {
+  :root {
+    --to-sheet: 255 255 255;
+  }
   html, body {
     background: #fff !important;
+    color: #000 !important;
   }
   .no-print {
     display: none !important;
   }
-  main {
+  main,
+  .to-shell,
+  .to-docarea {
+    display: block !important;
+    height: auto !important;
     overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+    border-radius: 0 !important;
+  }
+  .sheet-wrap {
+    margin: 0 !important;
   }
   .sheet {
     width: auto;
@@ -19,6 +33,7 @@
     margin: 0;
     padding: 0;
     box-shadow: none;
+    border-radius: 0;
   }
   .sheet .ProseMirror {
     min-height: 0;
@@ -27,6 +42,17 @@
   .to-marker {
     background: none !important;
     outline: none !important;
+    box-shadow: none !important;
+  }
+  .to-signal {
+    text-decoration: none !important;
+  }
+  .to-invisible {
+    background: none !important;
+    border: none !important;
+  }
+  .to-invisible::before {
+    content: none !important;
   }
   .sheet img,
   .sheet tr,

@@ -7,9 +7,9 @@ interface ToastApi { show(message: string, kind?: ToastKind): void }
 const ToastContext = createContext<ToastApi>({ show: () => {} });
 
 const KIND_CLASS: Record<ToastKind, string> = {
-  info: "bg-gray-800",
-  warning: "bg-verify-500",
-  error: "bg-alert-600",
+  info: "bg-raised text-ink border-line",
+  warning: "bg-raised text-ink border-accent/60 shadow-[0_0_16px_rgb(var(--to-accent)/0.35)]",
+  error: "bg-accent text-accent-ink border-accent",
 };
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -30,7 +30,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {children}
       <div className="no-print fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2" aria-live="polite">
         {items.map((t) => (
-          <div key={t.id} role="status" className={`${KIND_CLASS[t.kind]} text-white text-sm px-4 py-2 rounded-lg shadow-lg`}>
+          <div key={t.id} role="status" className={`${KIND_CLASS[t.kind]} font-ui border text-[13px] px-4 py-2.5 rounded-card shadow-lift`}>
             {t.message}
           </div>
         ))}

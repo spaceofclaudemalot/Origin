@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { AnalysisResult } from "../types/types";
 import { create } from "../storage/documents";
+import { Button, Card } from "../ui/primitives";
+import { ScoreGauge } from "../ui/ScoreGauge";
+import { ILogo } from "../ui/icons";
 import "./global.css";
 
 const STORAGE_KEY = "textorigin:selection";
@@ -123,111 +126,75 @@ const App: React.FC = () => {
     }
   };
 
-  const scoreColor = (score: number) =>
-    score < 21
-      ? "text-natural-500"
-      : score < 41
-      ? "text-primary-500"
-      : score < 61
-      ? "text-verify-500"
-      : "text-alert-500";
-
-  const confidenceLabel = (c: string) =>
-    c === "high"
-      ? "Haute"
-      : c === "medium"
-      ? "Moyenne"
-      : "Faible";
+  const confidenceLabel = (c: string) => (c === "high" ? "Haute" : c === "medium" ? "Moyenne" : "Faible");
 
   return (
-    <div className="min-h-[320px] w-80 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 font-sans">
-      <header className="flex items-center gap-2 mb-4">
-        <svg
-          className="w-8 h-8 text-primary-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeWidth="2"
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-          <path
-            strokeWidth="2"
-            d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-          />
-        </svg>
-        <h1 className="text-lg font-bold text-primary-700 dark:text-primary-400">
-          TextOrigin AI
-        </h1>
+    <div className="w-80 min-h-[320px] bg-canvas p-3 font-ui text-ink space-y-3">
+      <header className="flex items-center gap-2 px-1 pt-1">
+        <ILogo className="w-6 h-6 text-accent" />
+        <h1 className="text-[15px] font-semibold">TextOrigin AI</h1>
       </header>
 
-      <div className="space-y-4">
-        <button
-          onClick={handleAnalyze}
-          disabled={loading}
-          aria-label="Analyser le texte sélectionné"
-          className="w-full py-2.5 px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
-        >
-          {loading ? "Analyse en cours..." : "Analyze"}
-        </button>
-
-        <button
+      <Card className="p-3 space-y-2">
+        <Button onClick={handleAnalyze} disabled={loading} aria-label="Analyser le texte sélectionné" className="w-full">
+          {loading ? "Analyse en cours…" : "Analyser la sélection"}
+        </Button>
+        <Button
+          variant="secondary"
           onClick={handleOpenEditor}
           disabled={opening}
           aria-label="Ouvrir la sélection dans l'éditeur"
-          className="w-full py-2.5 px-4 border border-primary-600 text-primary-700 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-gray-800 disabled:opacity-50 rounded-lg font-medium transition-colors"
+          className="w-full"
         >
           {opening ? "Ouverture…" : "Ouvrir dans l'éditeur"}
-        </button>
+        </Button>
+      </Card>
 
-        {loading && (
-          <p className="text-sm text-gray-500 dark:text-gray-400" role="status">
-            Analyse en cours...
-          </p>
-        )}
+      {loading && (
+        <p className="text-2xs text-muted px-1" role="status">
+          Analyse en cours…
+        </p>
+      )}
 
-        {error && (
-          <p className="text-sm text-alert-500" role="alert">
-            {error}
-          </p>
-        )}
+      {error && (
+        <p className="rounded-card border border-accent/50 bg-accent/10 p-2.5 text-2xs" role="alert">
+          {error}
+        </p>
+      )}
 
-        {result && (
-          <div
-            className="border rounded-lg p-4 dark:border-gray-700"
-            aria-live="polite"
-          >
-            <div className="text-center mb-3">
-              <div
-                className={`text-4xl font-bold ${scoreColor(result.totalScore)}`}
-              >
-                {result.totalScore}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                AI Marker Score
-              </div>
+      {result && (
+        <Card className="p-4 space-y-3" aria-live="polite">
+          <ScoreGauge score={result.totalScore} size="md" />
+          <div className="space-y-1.5 text-[13px]">
+            <div className="flex justify-between">
+              <span>Marqueurs détectés</span>
+              <span className="font-medium">{result.markerCount}</span>
             </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Marqueurs détectés</span>
-                <span className="font-medium">{result.markerCount}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Confiance</span>
-                <span className="font-medium capitalize">
-                  {confidenceLabel(result.confidence)}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-                Score de présence de marqueurs stylistiques fréquemment
-                observés dans des textes générés par des LLM.
-              </p>
+            <div className="flex justify-between">
+              <span>Confiance</span>
+              <span className="font-medium">{confidenceLabel(result.confidence)}</span>
             </div>
+            {result.invisibles.total > 0 && (
+              <div className={result.invisibles.suspects ? "text-accent" : ""}>
+                <div className="flex justify-between">
+                  <span>Caractères invisibles</span>
+                  <span className="font-medium">
+                    {result.invisibles.total}
+                    {result.invisibles.suspects > 0 &&
+                      ` (dont ${result.invisibles.suspects} suspect${result.invisibles.suspects > 1 ? "s" : ""})`}
+                  </span>
+                </div>
+                {result.invisibles.suspects > 0 && (
+                  <p className="text-2xs mt-1">Texte caché ou manipulé : ouvrez la sélection dans l'éditeur pour le voir.</p>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+          <p className="text-2xs text-muted">
+            Score de présence de marqueurs stylistiques fréquemment observés dans des textes générés par des LLM.
+          </p>
+        </Card>
+      )}
     </div>
   );
 };

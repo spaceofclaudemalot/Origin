@@ -50,6 +50,8 @@ export interface Detection {
   confidence: number;
   explanation: string;
   suggestions: Suggestion[];
+  /** Poids dans la densité de sa famille (1 par défaut). */
+  weight?: number;
 }
 
 /**
@@ -79,6 +81,13 @@ export interface AnalysisResult {
   markerCount: number;
   categories: Record<DetectionCategory, number>;
   detections: Detection[];
+  /** Scores par famille (spec signaux §5). */
+  families: FamilyScore[];
+  /** Signaux portant sur tout le document. */
+  signals: GlobalSignal[];
+  wordCount: number;
+  /** Caractères invisibles : rapport séparé, sans effet sur le score. */
+  invisibles: InvisibleReport;
   segments?: Array<{
     index: number;
     total: number;
@@ -95,5 +104,59 @@ export interface AnalysisResult {
 export interface Detector {
   readonly id: string;
   readonly name: string;
+  /** Famille alimentée par ce détecteur ("vocabulary" par défaut). */
+  readonly family?: SignalFamily;
   detect(text: string): Promise<Detection[]>;
+}
+
+/** Familles de signaux composant le score global (spec signaux §5). */
+export type SignalFamily = "vocabulary" | "connectors" | "stereotypes" | "regularity";
+export type SignalStatus = "ok" | "alert" | "insufficient";
+
+/** Signal portant sur tout le document (rythme, paragraphes, densité de connecteurs). */
+export interface GlobalSignal {
+  id: "connector-density" | "rhythm" | "paragraph-uniformity" | "topic-sentences";
+  family: SignalFamily;
+  label: string;
+  value: number;
+  display: string;
+  score: number;
+  status: SignalStatus;
+  explanation: string;
+  ranges: Array<{ start: number; end: number }>;
+}
+
+export interface FamilyScore {
+  family: SignalFamily;
+  score: number;
+  weight: number;
+  measurable: boolean;
+}
+
+/** Détecteur qui produit aussi des signaux globaux à partir du texte découpé. */
+export interface GlobalDetector {
+  signals(text: string, segmented: import("../analysis/segment").Segmented): GlobalSignal[];
+}
+
+/** Caractère invisible ou espace spéciale trouvé dans le texte (hors score IA). */
+export interface InvisibleFinding {
+  start: number;
+  end: number;
+  /** Nom court du type (« ZWSP », « NBSP », « TAG »…). */
+  name: string;
+  /** Badge affiché dans l'éditeur. */
+  label: string;
+  severity: "hint" | "suspect";
+  /** Nombre de caractères regroupés (suites consécutives d'un même type). */
+  count: number;
+  /** Nettoyage : suppression, ou remplacement par une espace normale. */
+  action: "remove" | "space";
+  /** Texte caché décodé (caractères « tag »). */
+  hidden?: string;
+}
+
+export interface InvisibleReport {
+  findings: InvisibleFinding[];
+  total: number;
+  suspects: number;
 }

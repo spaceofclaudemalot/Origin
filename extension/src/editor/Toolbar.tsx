@@ -4,6 +4,10 @@ import { FONT_FAMILIES, FONT_SIZES } from "./schema";
 import { LINE_HEIGHTS } from "./extensions/ParagraphLineHeight";
 import { insertImageFiles } from "./StoredImageView";
 import { useToast } from "./Toast";
+import { Button, IconButton } from "../ui/primitives";
+import {
+  IBold, IBullet, IHighlight, IImage, IItalic, ILink, IOrdered, IQuote, IRedo, ITable, ITextColor, IUnderline, IUndo,
+} from "../ui/icons";
 
 const TEXT_COLORS = ["#202124", "#d93025", "#e37400", "#188038", "#1a73e8", "#9334e6", "#80868b"];
 const HIGHLIGHTS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa"];
@@ -11,21 +15,16 @@ const HIGHLIGHTS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa"];
 const Btn: React.FC<{
   label: string; active?: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode;
 }> = ({ label, active, disabled, onClick, children }) => (
-  <button
-    type="button"
-    title={label}
-    aria-label={label}
-    aria-pressed={active}
-    disabled={disabled}
-    onMouseDown={(e) => e.preventDefault()}
-    onClick={onClick}
-    className={`h-8 min-w-8 px-1.5 rounded text-sm ${active ? "bg-primary-100 text-primary-700" : "hover:bg-gray-100"} disabled:opacity-40`}
-  >
+  <IconButton label={label} active={active} disabled={disabled} keepFocus onClick={onClick}>
     {children}
-  </button>
+  </IconButton>
 );
 
-const Sep = () => <span className="w-px h-5 bg-gray-300 mx-1" aria-hidden="true" />;
+const SELECT = "h-8 text-[13px] bg-transparent rounded-ctl hover:bg-surface px-1.5 outline-none cursor-pointer";
+const POPOVER = "absolute top-9 left-0 z-30 bg-raised border border-line rounded-card shadow-lift p-2 flex gap-1";
+const ICON = "w-[18px] h-[18px]";
+
+const Sep = () => <span className="w-px h-5 bg-line mx-1" aria-hidden="true" />;
 
 const Swatches: React.FC<{ label: string; colors: string[]; onPick: (c: string | null) => void; children: React.ReactNode }> = ({
   label, colors, onPick, children,
@@ -35,7 +34,7 @@ const Swatches: React.FC<{ label: string; colors: string[]; onPick: (c: string |
     <div className="relative">
       <Btn label={label} onClick={() => setOpen((o) => !o)}>{children}</Btn>
       {open && (
-        <div className="absolute top-9 left-0 z-30 bg-white shadow-lg rounded p-2 flex gap-1" onMouseLeave={() => setOpen(false)}>
+        <div className={POPOVER} onMouseLeave={() => setOpen(false)}>
           {colors.map((c) => (
             <button
               key={c}
@@ -43,11 +42,11 @@ const Swatches: React.FC<{ label: string; colors: string[]; onPick: (c: string |
               aria-label={c}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => { onPick(c); setOpen(false); }}
-              className="w-5 h-5 rounded border border-gray-300"
+              className="w-5 h-5 rounded-md border border-line"
               style={{ background: c }}
             />
           ))}
-          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onPick(null); setOpen(false); }} className="text-xs px-1">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onPick(null); setOpen(false); }} className="text-2xs px-1 text-muted hover:text-ink">
             Aucune
           </button>
         </div>
@@ -87,9 +86,9 @@ export const Toolbar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
   const chain = () => editor.chain().focus();
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 px-3 py-1 bg-gray-50 border-t border-gray-200" role="toolbar" aria-label="Mise en forme">
-      <Btn label="Annuler (Ctrl+Z)" disabled={!s.canUndo} onClick={() => chain().undo().run()}>↶</Btn>
-      <Btn label="Rétablir (Ctrl+Y)" disabled={!s.canRedo} onClick={() => chain().redo().run()}>↷</Btn>
+    <div className="flex flex-wrap items-center gap-0.5 px-2 py-1 bg-raised border border-line rounded-card shadow-soft" role="toolbar" aria-label="Mise en forme">
+      <Btn label="Annuler (Ctrl+Z)" disabled={!s.canUndo} onClick={() => chain().undo().run()}><IUndo className={ICON} /></Btn>
+      <Btn label="Rétablir (Ctrl+Y)" disabled={!s.canRedo} onClick={() => chain().redo().run()}><IRedo className={ICON} /></Btn>
       <Sep />
       <select
         aria-label="Style de paragraphe"
@@ -99,7 +98,7 @@ export const Toolbar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
           if (level === 0) chain().setParagraph().run();
           else chain().setHeading({ level }).run();
         }}
-        className="h-8 text-sm bg-transparent rounded hover:bg-gray-100 px-1"
+        className={SELECT}
       >
         <option value={0}>Texte normal</option>
         <option value={1}>Titre 1</option>
@@ -110,7 +109,7 @@ export const Toolbar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
         aria-label="Police"
         value={s.font}
         onChange={(e) => (e.target.value ? chain().setFontFamily(e.target.value).run() : chain().unsetFontFamily().run())}
-        className="h-8 text-sm bg-transparent rounded hover:bg-gray-100 px-1 w-36"
+        className={`${SELECT} w-36`}
       >
         <option value="">Police par défaut</option>
         {FONT_FAMILIES.map((f) => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
@@ -119,23 +118,23 @@ export const Toolbar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
         aria-label="Taille"
         value={s.size}
         onChange={(e) => (e.target.value ? chain().setFontSize(`${e.target.value}pt`).run() : chain().unsetFontSize().run())}
-        className="h-8 text-sm bg-transparent rounded hover:bg-gray-100 px-1 w-16"
+        className={`${SELECT} w-16`}
       >
         <option value="">11</option>
         {FONT_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
       </select>
       <Sep />
-      <Btn label="Gras (Ctrl+B)" active={s.bold} onClick={() => chain().toggleBold().run()}><b>B</b></Btn>
-      <Btn label="Italique (Ctrl+I)" active={s.italic} onClick={() => chain().toggleItalic().run()}><i>I</i></Btn>
-      <Btn label="Souligné (Ctrl+U)" active={s.underline} onClick={() => chain().toggleUnderline().run()}><u>U</u></Btn>
-      <Swatches label="Couleur du texte" colors={TEXT_COLORS} onPick={(c) => (c ? chain().setColor(c).run() : chain().unsetColor().run())}>A</Swatches>
-      <Swatches label="Surlignage" colors={HIGHLIGHTS} onPick={(c) => (c ? chain().setHighlight({ color: c }).run() : chain().unsetHighlight().run())}>🖍</Swatches>
+      <Btn label="Gras (Ctrl+B)" active={s.bold} onClick={() => chain().toggleBold().run()}><IBold className={ICON} /></Btn>
+      <Btn label="Italique (Ctrl+I)" active={s.italic} onClick={() => chain().toggleItalic().run()}><IItalic className={ICON} /></Btn>
+      <Btn label="Souligné (Ctrl+U)" active={s.underline} onClick={() => chain().toggleUnderline().run()}><IUnderline className={ICON} /></Btn>
+      <Swatches label="Couleur du texte" colors={TEXT_COLORS} onPick={(c) => (c ? chain().setColor(c).run() : chain().unsetColor().run())}><ITextColor className={ICON} /></Swatches>
+      <Swatches label="Surlignage" colors={HIGHLIGHTS} onPick={(c) => (c ? chain().setHighlight({ color: c }).run() : chain().unsetHighlight().run())}><IHighlight className={ICON} /></Swatches>
       <Sep />
       <select
         aria-label="Alignement"
         value={s.align}
         onChange={(e) => chain().setTextAlign(e.target.value).run()}
-        className="h-8 text-sm bg-transparent rounded hover:bg-gray-100 px-1"
+        className={SELECT}
       >
         <option value="left">Gauche</option>
         <option value="center">Centré</option>
@@ -146,18 +145,18 @@ export const Toolbar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
         aria-label="Interligne"
         value={s.lineHeight}
         onChange={(e) => (e.target.value ? chain().setParagraphLineHeight(e.target.value).run() : chain().unsetParagraphLineHeight().run())}
-        className="h-8 text-sm bg-transparent rounded hover:bg-gray-100 px-1"
+        className={SELECT}
       >
         <option value="">Interligne</option>
         {LINE_HEIGHTS.map((v) => <option key={v} value={v}>{v}</option>)}
       </select>
       <Sep />
-      <Btn label="Liste à puces" active={s.bullet} onClick={() => chain().toggleBulletList().run()}>•</Btn>
-      <Btn label="Liste numérotée" active={s.ordered} onClick={() => chain().toggleOrderedList().run()}>1.</Btn>
-      <Btn label="Citation" active={s.quote} onClick={() => chain().toggleBlockquote().run()}>❝</Btn>
+      <Btn label="Liste à puces" active={s.bullet} onClick={() => chain().toggleBulletList().run()}><IBullet className={ICON} /></Btn>
+      <Btn label="Liste numérotée" active={s.ordered} onClick={() => chain().toggleOrderedList().run()}><IOrdered className={ICON} /></Btn>
+      <Btn label="Citation" active={s.quote} onClick={() => chain().toggleBlockquote().run()}><IQuote className={ICON} /></Btn>
       <Sep />
       <LinkButton editor={editor} active={s.link} />
-      <Btn label="Insérer une image" onClick={() => fileInput.current?.click()}>🖼</Btn>
+      <Btn label="Insérer une image" onClick={() => fileInput.current?.click()}><IImage className={ICON} /></Btn>
       <input
         ref={fileInput}
         type="file"
@@ -170,7 +169,7 @@ export const Toolbar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
           void insertImageFiles(editor.view, files, (m) => toast.show(m, "error"));
         }}
       />
-      <Btn label="Insérer un tableau" onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>⊞</Btn>
+      <Btn label="Insérer un tableau" onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><ITable className={ICON} /></Btn>
       {s.table && (
         <>
           <Btn label="Ajouter une ligne" onClick={() => chain().addRowAfter().run()}>+L</Btn>
@@ -189,14 +188,14 @@ const LinkButton: React.FC<{ editor: Editor; active: boolean }> = ({ editor, act
   const [open, setOpen] = useState(false);
   const [href, setHref] = useState("");
   if (active) {
-    return <Btn label="Retirer le lien" active onClick={() => editor.chain().focus().extendMarkRange("link").unsetLink().run()}>🔗</Btn>;
+    return <Btn label="Retirer le lien" active onClick={() => editor.chain().focus().extendMarkRange("link").unsetLink().run()}><ILink className={ICON} /></Btn>;
   }
   return (
     <div className="relative">
-      <Btn label="Insérer un lien" onClick={() => setOpen((o) => !o)}>🔗</Btn>
+      <Btn label="Insérer un lien" onClick={() => setOpen((o) => !o)}><ILink className={ICON} /></Btn>
       {open && (
         <form
-          className="absolute top-9 left-0 z-30 bg-white shadow-lg rounded p-2 flex gap-1"
+          className={POPOVER}
           onSubmit={(e) => {
             e.preventDefault();
             const url = href.trim();
@@ -211,9 +210,9 @@ const LinkButton: React.FC<{ editor: Editor; active: boolean }> = ({ editor, act
             onChange={(e) => setHref(e.target.value)}
             placeholder="https://…"
             aria-label="Adresse du lien"
-            className="border rounded px-2 py-1 text-sm w-64"
+            className="h-8 bg-surface border border-line rounded-ctl px-2 text-[13px] w-64 outline-none focus:border-accent"
           />
-          <button type="submit" className="text-sm px-2 bg-primary-600 text-white rounded">OK</button>
+          <Button size="sm" type="submit">OK</Button>
         </form>
       )}
     </div>

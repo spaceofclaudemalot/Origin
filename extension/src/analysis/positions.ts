@@ -67,15 +67,22 @@ export function buildTextIndex(doc: PMNode): TextIndex {
   return { text, toPos };
 }
 
+export function mapRange(index: TextIndex, start: number, end: number): { from: number; to: number } | null {
+  if (start < 0 || end > index.text.length || start >= end) return null;
+  const from = index.toPos(start, "start");
+  const to = index.toPos(end, "end");
+  return from == null || to == null || from >= to ? null : { from, to };
+}
+
+export function mapRanges(index: TextIndex, ranges: Array<{ start: number; end: number }>): Array<{ from: number; to: number }> {
+  return ranges.map((r) => mapRange(index, r.start, r.end)).filter((r): r is { from: number; to: number } => r != null);
+}
+
 export function toRanges(index: TextIndex, detections: Detection[]): MarkerRange[] {
   const ranges: MarkerRange[] = [];
   for (const detection of detections) {
-    const { start, end } = detection;
-    if (start < 0 || end > index.text.length || start >= end) continue;
-    const from = index.toPos(start, "start");
-    const to = index.toPos(end, "end");
-    if (from == null || to == null || from >= to) continue;
-    ranges.push({ from, to, detection });
+    const r = mapRange(index, detection.start, detection.end);
+    if (r) ranges.push({ ...r, detection });
   }
   return ranges;
 }

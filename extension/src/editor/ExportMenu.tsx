@@ -4,17 +4,17 @@ import { toDocx } from "../export/toDocx";
 import { downloadBlob, sanitizeFilename } from "../export/download";
 import { getImage } from "../storage/documents";
 import { useToast } from "./Toast";
+import { Menu, MenuItem } from "../ui/primitives";
+import { IChevron } from "../ui/icons";
 
 const PRINT_HINT_KEY = "textorigin:print-hint-shown";
 
 export const ExportMenu: React.FC<{ editor: Editor | null; title: string }> = ({ editor, title }) => {
   const toast = useToast();
-  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const exportDocx = async () => {
     if (!editor) return;
-    setOpen(false);
     setBusy(true);
     try {
       const blob = await toDocx(editor.getJSON(), { title, getImage });
@@ -28,7 +28,6 @@ export const ExportMenu: React.FC<{ editor: Editor | null; title: string }> = ({
   };
 
   const exportPdf = () => {
-    setOpen(false);
     try {
       if (!localStorage.getItem(PRINT_HINT_KEY)) {
         toast.show("Choisissez « Enregistrer au format PDF » comme destination.", "info");
@@ -48,26 +47,17 @@ export const ExportMenu: React.FC<{ editor: Editor | null; title: string }> = ({
   };
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        disabled={!editor || busy}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className="h-9 px-4 rounded-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white text-sm font-medium"
-      >
-        {busy ? "Export…" : "Exporter ▾"}
-      </button>
-      {open && (
-        <div role="menu" className="absolute right-0 top-11 z-30 bg-white shadow-lg rounded-lg py-1 w-48" onMouseLeave={() => setOpen(false)}>
-          <button role="menuitem" onClick={() => void exportDocx()} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
-            Word (.docx)
-          </button>
-          <button role="menuitem" onClick={exportPdf} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
-            PDF
-          </button>
-        </div>
+    <Menu
+      disabled={!editor || busy}
+      buttonClassName="h-9 pl-4 pr-3 rounded-ctl bg-accent text-accent-ink text-[13px] font-semibold inline-flex items-center gap-1.5 hover:brightness-110 disabled:bg-line disabled:text-muted"
+      label={<>{busy ? "Export…" : "Exporter"}<IChevron className="w-4 h-4" /></>}
+    >
+      {(close) => (
+        <>
+          <MenuItem onSelect={() => { close(); void exportDocx(); }}>Word (.docx)</MenuItem>
+          <MenuItem onSelect={() => { close(); exportPdf(); }}>PDF</MenuItem>
+        </>
       )}
-    </div>
+    </Menu>
   );
 };

@@ -1,36 +1,56 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { create, list, remove, update, type StoredDocument } from "../storage/documents";
+import { list, remove, update, type StoredDocument } from "../storage/documents";
 import { useToast } from "./Toast";
+import { relativeDate, wordCountOf } from "./docInfo";
+import { Button, IconButton } from "../ui/primitives";
+import { IEdit, IPlus, ISearch, ITrash } from "../ui/icons";
 
-const dateFmt = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
+const RECENT_COUNT = 5;
+const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+const Heading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <h3 className="px-3 pt-3 pb-1 text-2xs font-semibold uppercase tracking-wider text-muted">{children}</h3>
+);
 
 export const DocumentList: React.FC<{
   currentId: string | null;
   onOpen: (doc: StoredDocument) => void;
   onCurrentRenamed: (title: string) => void;
   beforeAction: () => Promise<void>;
-}> = ({ currentId, onOpen, onCurrentRenamed, beforeAction }) => {
+  onNew: () => void;
+  /** Le menu « … » demande la suppression du document courant. */
+  deleteRequested: boolean;
+  onDeleteRequestSeen: () => void;
+  /** Change quand la liste doit être relue (document ouvert, enregistrement). */
+  refreshKey: string;
+}> = ({ currentId, onOpen, onCurrentRenamed, beforeAction, onNew, deleteRequested, onDeleteRequestSeen, refreshKey }) => {
   const toast = useToast();
-  const [open, setOpen] = useState(false);
   const [docs, setDocs] = useState<StoredDocument[]>([]);
+  const [query, setQuery] = useState("");
   const [renaming, setRenaming] = useState<{ id: string; title: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      await beforeAction(); // la liste reflète la dernière sauvegarde
       setDocs(await list());
     } catch {
       toast.show("Impossible de lire vos documents.", "error");
     }
-  }, [beforeAction, toast]);
+  }, [toast]);
 
   useEffect(() => {
-    if (open) void refresh();
-  }, [open, refresh]);
+    void refresh();
+  }, [refresh, refreshKey]);
+
+  useEffect(() => {
+    if (!deleteRequested) return;
+    if (currentId) setConfirmDelete(currentId);
+    onDeleteRequestSeen();
+  }, [deleteRequested, currentId, onDeleteRequestSeen]);
 
   const run = async (action: () => Promise<void>) => {
     try {
+      await beforeAction(); // la liste reflète la dernière sauvegarde
       await action();
       await refresh();
     } catch (e) {
@@ -38,13 +58,6 @@ export const DocumentList: React.FC<{
       toast.show("L'opération a échoué.", "error");
     }
   };
-
-  const newDoc = () =>
-    run(async () => {
-      const doc = await create();
-      onOpen(doc);
-      setOpen(false);
-    });
 
   const saveRename = () =>
     renaming &&
@@ -58,66 +71,114 @@ export const DocumentList: React.FC<{
     run(async () => {
       await remove(id);
       setConfirmDelete(null);
-      if (id === currentId) onOpen((await list())[0] ?? (await create()));
+      if (id === currentId) {
+        const next = (await list())[0];
+        if (next) onOpen(next);
+        else onNew();
+      }
     });
 
-  return (
-    <>
-      <button onClick={() => setOpen(true)} aria-label="Mes documents" title="Mes documents" className="h-9 w-9 rounded hover:bg-gray-100 text-xl">
-        ☰
-      </button>
-      {open && (
-        <div className="no-print fixed inset-0 z-40 flex" role="dialog" aria-label="Mes documents">
-          <div className="w-96 max-w-full bg-white h-full shadow-xl flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-semibold">Mes documents</h2>
-              <button onClick={() => setOpen(false)} aria-label="Fermer" className="text-xl px-2">×</button>
-            </div>
-            <div className="p-4">
-              <button onClick={() => void newDoc()} className="w-full py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium">
-                + Nouveau document
-              </button>
-            </div>
-            <ul className="flex-1 overflow-auto px-2 pb-4">
-              {docs.map((d) => (
-                <li key={d.id} className={`group rounded-lg p-2 ${d.id === currentId ? "bg-primary-50" : "hover:bg-gray-50"}`}>
-                  {renaming?.id === d.id ? (
-                    <form onSubmit={(e) => { e.preventDefault(); void saveRename(); }} className="flex gap-1">
-                      <input
-                        autoFocus
-                        value={renaming.title}
-                        onChange={(e) => setRenaming({ id: d.id, title: e.target.value })}
-                        aria-label="Nouveau titre"
-                        className="flex-1 border rounded px-2 py-1 text-sm"
-                      />
-                      <button type="submit" className="text-sm px-2">OK</button>
-                    </form>
-                  ) : confirmDelete === d.id ? (
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="flex-1">Supprimer « {d.title} » ?</span>
-                      <button onClick={() => void doDelete(d.id)} className="text-alert-600 font-medium">Supprimer</button>
-                      <button onClick={() => setConfirmDelete(null)}>Annuler</button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="flex-1 text-left min-w-0"
-                        onClick={() => { if (d.id !== currentId) onOpen(d); setOpen(false); }}
-                      >
-                        <div className="text-sm font-medium truncate">{d.title}</div>
-                        <div className="text-xs text-gray-500">{dateFmt.format(d.updatedAt)}</div>
-                      </button>
-                      <button onClick={() => setRenaming({ id: d.id, title: d.title })} className="text-xs opacity-0 group-hover:opacity-100 focus:opacity-100">Renommer</button>
-                      <button onClick={() => setConfirmDelete(d.id)} className="text-xs text-alert-600 opacity-0 group-hover:opacity-100 focus:opacity-100">Supprimer</button>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
+  const q = fold(query.trim());
+  const shown = q ? docs.filter((d) => fold(d.title).includes(q)) : docs;
+
+  const row = (d: StoredDocument) => {
+    const active = d.id === currentId;
+    if (renaming?.id === d.id) {
+      return (
+        <form onSubmit={(e) => { e.preventDefault(); void saveRename(); }} className="flex gap-1 p-1">
+          <input
+            autoFocus
+            value={renaming.title}
+            onChange={(e) => setRenaming({ id: d.id, title: e.target.value })}
+            onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setRenaming(null); } }}
+            aria-label="Nouveau titre"
+            className="flex-1 min-w-0 h-8 bg-raised border border-line rounded-ctl px-2 text-[13px] outline-none focus:border-accent"
+          />
+          <Button size="sm" type="submit">OK</Button>
+        </form>
+      );
+    }
+    if (confirmDelete === d.id) {
+      return (
+        <div className="rounded-ctl bg-raised border border-accent/40 p-2 space-y-2 text-[13px]">
+          <p>Supprimer « {d.title} » ?</p>
+          <div className="flex gap-1.5">
+            <Button size="sm" onClick={() => void doDelete(d.id)}>Supprimer</Button>
+            <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(null)}>Annuler</Button>
           </div>
-          <div className="flex-1 bg-black/30" onClick={() => setOpen(false)} />
         </div>
-      )}
-    </>
+      );
+    }
+    return (
+      <div
+        className={`group relative flex items-center rounded-ctl transition-colors ${
+          active ? "bg-raised shadow-soft" : "hover:bg-raised/60"
+        }`}
+      >
+        {active && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-accent" aria-hidden="true" />}
+        <button
+          type="button"
+          className="flex-1 min-w-0 text-left px-3 py-2"
+          aria-current={active ? "page" : undefined}
+          onClick={() => { if (!active) onOpen(d); }}
+        >
+          <div className="text-[13px] font-medium truncate">{d.title || "Sans titre"}</div>
+          <div className="text-2xs text-muted">
+            {relativeDate(d.updatedAt)} · {wordCountOf(d.content)} mots
+          </div>
+        </button>
+        <div className="flex pr-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+          <IconButton label="Renommer" className="h-7 min-w-7" onClick={() => setRenaming({ id: d.id, title: d.title })}>
+            <IEdit className="w-4 h-4" />
+          </IconButton>
+          <IconButton label="Supprimer" className="h-7 min-w-7" onClick={() => setConfirmDelete(d.id)}>
+            <ITrash className="w-4 h-4" />
+          </IconButton>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-4 pt-4">
+        <h2 className="text-2xs font-semibold uppercase tracking-wider text-muted">Documents</h2>
+        <IconButton label="Nouveau document" onClick={onNew}>
+          <IPlus className="w-4 h-4" />
+        </IconButton>
+      </div>
+      <div className="px-3 pt-3">
+        <label className="flex items-center gap-2 h-9 px-3 bg-raised border border-line rounded-ctl text-muted focus-within:border-accent">
+          <ISearch className="w-4 h-4 shrink-0" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher"
+            aria-label="Rechercher un document"
+            className="flex-1 min-w-0 bg-transparent text-[13px] text-ink placeholder:text-muted outline-none"
+          />
+        </label>
+      </div>
+      <div className="flex-1 overflow-auto px-2 pb-4">
+        {q ? (
+          <>
+            <Heading>Résultats</Heading>
+            {shown.length === 0 && <p className="px-3 py-2 text-2xs text-muted">Aucun document.</p>}
+            <ul className="space-y-0.5">{shown.map((d) => <li key={d.id}>{row(d)}</li>)}</ul>
+          </>
+        ) : (
+          <>
+            <Heading>Récents</Heading>
+            <ul className="space-y-0.5">{docs.slice(0, RECENT_COUNT).map((d) => <li key={d.id}>{row(d)}</li>)}</ul>
+            {docs.length > RECENT_COUNT && (
+              <>
+                <Heading>Tous les documents</Heading>
+                <ul className="space-y-0.5">{docs.slice(RECENT_COUNT).map((d) => <li key={d.id}>{row(d)}</li>)}</ul>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 };

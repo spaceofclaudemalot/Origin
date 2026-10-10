@@ -3,7 +3,17 @@ import type {
   AnalysisResult,
   Detector,
   DetectionCategory,
+  GlobalDetector,
+  GlobalSignal,
+  SignalFamily,
 } from "../types/types";
+import { segment } from "../analysis/segment";
+import { computeScore } from "../analysis/scoring";
+import { invisiblesReport } from "../detectors/invisibles";
+
+function isGlobal(d: Detector): d is Detector & GlobalDetector {
+  return typeof (d as Partial<GlobalDetector>).signals === "function";
+}
 
 export class DetectorService {
   private detectors: Map<string, Detector> = new Map();
@@ -28,7 +38,10 @@ export class DetectorService {
   }
 
   async detectAll(text: string): Promise<AnalysisResult> {
+    const segmented = segment(text);
     const detections: Detection[] = [];
+    const signals: GlobalSignal[] = [];
+    const registered = new Set<SignalFamily>();
     const categories: Record<DetectionCategory, number> = {
       "lexical-marker": 0,
       "discourse-structure": 0,
@@ -36,36 +49,17 @@ export class DetectorService {
       "style-regularity": 0,
       anomaly: 0,
     };
-    const scores: number[] = [];
 
     for (const detector of this.detectors.values()) {
+      registered.add(detector.family ?? "vocabulary");
       const results = await detector.detect(text);
       detections.push(...results);
-      for (const d of results) {
-        categories[d.category] += 1;
-        scores.push(d.score);
-      }
+      for (const d of results) categories[d.category] += 1;
+      if (isGlobal(detector)) signals.push(...detector.signals(text, segmented));
     }
 
-    // Score agrégé : moyenne des scores, bornée 0–100
-    // Avec bonus pour plusieurs détections de haute confiance
-    let totalScore = 0;
-    if (scores.length > 0) {
-      const averageScore = scores.reduce((acc, score) => acc + score, 0) / scores.length;
-      // Bonus pour plusieurs détections de haute confiance (confidence >= 0.7)
-      const highConfidenceCount = scores.filter((_, index) =>
-        detections[index].confidence >= 0.7).length;
-      const confidenceBonus = Math.min(0.2, highConfidenceCount * 0.01); // jusqu'à +20%
-      totalScore = Math.min(100, Math.max(0, Math.round(averageScore * (1 + confidenceBonus))));
-    }
-
-    // Niveau de confiance global
-    let confidence: "low" | "medium" | "high" = "low";
-    if (detections.length >= 3) {
-      confidence = detections.every((d) => d.confidence >= 0.7) ? "high" : "medium";
-    } else if (detections.length > 0) {
-      confidence = detections[0].confidence >= 0.7 ? "medium" : "low";
-    }
+    const wordCount = segmented.words.length;
+    const { totalScore, confidence, families } = computeScore({ detections, signals, wordCount, registered });
 
     return {
       totalScore,
@@ -73,6 +67,11 @@ export class DetectorService {
       markerCount: detections.length,
       categories,
       detections,
+      families,
+      signals,
+      wordCount,
+      invisibles: invisiblesReport(text),
     };
   }
+
 }

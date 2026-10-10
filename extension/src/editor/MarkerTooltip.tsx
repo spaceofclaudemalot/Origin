@@ -38,13 +38,13 @@ export const MarkerTooltip: React.FC<{ editor: Editor | null; result: AnalysisRe
   return (
     <div
       role="tooltip"
-      className="no-print fixed z-40 max-w-xs bg-gray-800 text-white text-xs rounded-lg shadow-xl p-3 pointer-events-none"
+      className="no-print fixed z-40 max-w-xs bg-[#fbfaf7] text-[#1d1d1b] border border-[#d6d2ca] text-2xs font-ui rounded-card shadow-lift p-3 pointer-events-none"
       style={{ left: Math.min(hover.x, window.innerWidth - 330), top: hover.y }}
     >
-      <div className="text-blue-300 mb-1">{CATEGORY_LABEL[d.category]} · score {d.score}</div>
+      <div className="text-[#b8411d] font-semibold mb-1">{CATEGORY_LABEL[d.category]} · score {d.score}</div>
       <p className="mb-2">{d.explanation}</p>
       {d.suggestions.length > 0 && (
-        <p className="text-gray-300">Suggestions : {d.suggestions.map((s) => matchCase(original, s.text) || "supprimer").join(", ")}</p>
+        <p className="text-[#6b665e]">Suggestions : {d.suggestions.map((s) => matchCase(original, s.text) || "supprimer").join(", ")}</p>
       )}
     </div>
   );

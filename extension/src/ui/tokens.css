@@ -1,0 +1,52 @@
+@import "@fontsource-variable/inter";
+
+:root {
+  --to-canvas: 207 204 198;
+  --to-surface: 228 225 219;
+  --to-raised: 235 232 226;
+  --to-line: 214 210 202;
+  --to-rail: 35 35 35;
+  --to-ink: 29 29 27;
+  --to-muted: 95 90 82;
+  --to-accent: 223 88 48;
+  --to-accent-ink: 255 255 255;
+  --to-band-low: 169 184 164;
+  --to-band-mid: 185 180 170;
+  --to-band-notable: 226 161 131;
+  --to-shadow: 0 0 0;
+  --to-shadow-k: 1;
+  /* Feuille : identiques dans les deux thèmes */
+  --to-sheet: 251 250 247;
+  --to-sheet-ink: 29 29 27;
+  color-scheme: light;
+}
+
+body {
+  background: rgb(var(--to-canvas));
+  color: rgb(var(--to-ink));
+  font-family: "Inter Variable", system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--to-accent));
+  outline-offset: 2px;
+}
+
+/* Mode sombre : le cadre passe en anthracite, la feuille reste claire (--to-sheet* inchangés) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --to-canvas: 21 21 20;
+    --to-surface: 35 35 33;
+    --to-raised: 44 44 42;
+    --to-line: 58 58 55;
+    --to-rail: 11 11 11;
+    --to-ink: 236 233 227;
+    --to-muted: 157 152 143;
+    --to-accent: 232 104 63;
+    --to-band-low: 127 143 123;
+    --to-band-mid: 90 87 81;
+    --to-band-notable: 168 100 74;
+    --to-shadow-k: 3;
+    color-scheme: dark;
+  }
+}
