@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { AnalysisResult } from "../types/types";
+import type { AnalysisResult, AnalyzeRequest, AnalyzeResponse } from "../types/types";
 import { create } from "../storage/documents";
 import { Button, Card } from "../ui/primitives";
 import { ScoreGauge } from "../ui/ScoreGauge";
 import { ILogo } from "../ui/icons";
 import "./global.css";
 
+/**
+ * Dernière sélection analysée, réaffichée à la réouverture du popup. Gardée en
+ * stockage de session : le texte d'une page ne survit pas au navigateur.
+ */
 const STORAGE_KEY = "textorigin:selection";
 
 const App: React.FC = () => {
@@ -15,9 +19,11 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    chrome.storage.local.get([STORAGE_KEY], (items) => {
+    // anciennes versions : la sélection était gardée sans limite de durée
+    chrome.storage.local.remove(STORAGE_KEY);
+    chrome.storage.session.get(STORAGE_KEY).then((items) => {
       const text = items[STORAGE_KEY];
-      if (text && text.length > 0) {
+      if (typeof text === "string" && text.length > 0) {
         analyze(text);
       }
     });
@@ -28,9 +34,9 @@ const App: React.FC = () => {
     setError(null);
     try {
       const res = await new Promise<AnalysisResult>((resolve, reject) => {
-        chrome.runtime.sendMessage(
+        chrome.runtime.sendMessage<AnalyzeRequest, AnalyzeResponse | undefined>(
           { type: "ANALYZE_TEXT", text },
-          (response: any) => {
+          (response) => {
             if (chrome.runtime.lastError)
               reject(new Error(chrome.runtime.lastError.message));
             else if (response?.type === "ANALYSIS_READY") resolve(response.result);
@@ -41,7 +47,7 @@ const App: React.FC = () => {
         );
       });
       setResult(res);
-      chrome.storage.local.set({ [STORAGE_KEY]: text });
+      chrome.storage.session.set({ [STORAGE_KEY]: text });
     } catch (e) {
       const msg = (e as Error).message || "Erreur inconnue.";
       setError(msg);

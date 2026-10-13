@@ -4,7 +4,8 @@ import type { StoredDocument } from "./documents";
  * Copie de secours synchrone (localStorage) écrite à la fermeture de la page :
  * contrairement à IndexedDB, elle ne peut pas être annulée par le déchargement.
  */
-const key = (id: string) => `textorigin:unsaved:${id}`;
+const PREFIX = "textorigin:unsaved:";
+const key = (id: string) => `${PREFIX}${id}`;
 
 export function writeBackup(doc: StoredDocument): void {
   try {
@@ -19,6 +20,24 @@ export function clearBackup(id: string): void {
     localStorage.removeItem(key(id));
   } catch {
     // rien à nettoyer
+  }
+}
+
+/**
+ * Supprime les copies de secours des documents qui n'existent plus : sans cela,
+ * le texte d'un document supprimé resterait en clair dans localStorage.
+ */
+export function pruneBackups(existingIds: Iterable<string>): void {
+  try {
+    const keep = new Set([...existingIds].map(key));
+    const stale: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(PREFIX) && !keep.has(k)) stale.push(k);
+    }
+    stale.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    // stockage indisponible : rien à nettoyer
   }
 }
 

@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   create, get, list, update, remove, put, putImage, getImage, textToContent, collectImageIds, DocumentNotFoundError,
   __resetDbForTests, __setClockForTests, DEFAULT_TITLE,
@@ -94,5 +94,19 @@ describe("documents store", () => {
     expect(await get(a.id)).toBeUndefined();
     expect(await getImage(own)).toBeUndefined();
     expect(await getImage(shared)).toBeDefined();
+  });
+
+  it("remove also deletes the document's localStorage backup", async () => {
+    const data = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => data.get(k) ?? null,
+      setItem: (k: string, v: string) => void data.set(k, v),
+      removeItem: (k: string) => void data.delete(k),
+    });
+    const a = await create();
+    localStorage.setItem(`textorigin:unsaved:${a.id}`, JSON.stringify(a));
+    await remove(a.id);
+    expect(localStorage.getItem(`textorigin:unsaved:${a.id}`)).toBeNull();
+    vi.unstubAllGlobals();
   });
 });

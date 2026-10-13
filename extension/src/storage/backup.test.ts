@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { writeBackup, clearBackup, withBackup } from "./backup";
+import { writeBackup, clearBackup, withBackup, pruneBackups } from "./backup";
 import type { StoredDocument } from "./documents";
 
 class MemoryStorage {
@@ -7,10 +7,12 @@ class MemoryStorage {
   getItem(k: string) { return this.data.get(k) ?? null; }
   setItem(k: string, v: string) { this.data.set(k, v); }
   removeItem(k: string) { this.data.delete(k); }
+  get length() { return this.data.size; }
+  key(i: number) { return [...this.data.keys()][i] ?? null; }
 }
 
-const doc = (updatedAt: number, title = "T"): StoredDocument => ({
-  id: "A", title, content: { type: "doc", content: [] }, createdAt: 1, updatedAt,
+const doc = (updatedAt: number, title = "T", id = "A"): StoredDocument => ({
+  id, title, content: { type: "doc", content: [] }, createdAt: 1, updatedAt,
 });
 
 beforeEach(() => {
@@ -38,5 +40,15 @@ describe("backup", () => {
   it("ignores a corrupted backup", () => {
     localStorage.setItem("textorigin:unsaved:A", "{oops");
     expect(withBackup(doc(100))).toEqual({ doc: doc(100), recovered: false });
+  });
+
+  it("pruneBackups removes backups of deleted documents only", () => {
+    writeBackup(doc(200, "Gardé", "A"));
+    writeBackup(doc(200, "Supprimé", "B"));
+    localStorage.setItem("autre:clef", "x");
+    pruneBackups(["A"]);
+    expect(localStorage.getItem("textorigin:unsaved:A")).not.toBeNull();
+    expect(localStorage.getItem("textorigin:unsaved:B")).toBeNull();
+    expect(localStorage.getItem("autre:clef")).toBe("x");
   });
 });
