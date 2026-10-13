@@ -17,6 +17,9 @@ export class LexicalDetector implements Detector {
 
   async detect(text: string, language?: "en" | "fr"): Promise<Detection[]> {
     const matches = new Map<string, Detection>(); // clef = start-end pour dédup
+    const languageOf = new Map<string, string>();
+    // Sans langue imposée, un terme commun aux deux langues prend l'entrée de la langue du texte
+    const preferred = language ?? guessLanguage(text);
 
     for (const entry of LEXICAL_ENTRIES) {
       if (language && entry.language !== language) {
@@ -31,9 +34,10 @@ export class LexicalDetector implements Detector {
       const score = this.calculateScore(entry, found.length);
       for (const m of found) {
         const key = `${m.index}-${m.index + m[0].length}`;
-        if (matches.has(key)) {
+        if (matches.has(key) && (languageOf.get(key) === preferred || entry.language !== preferred)) {
           continue; // déduplication des chevauchements (Review Focus #5)
         }
+        languageOf.set(key, entry.language);
         matches.set(key, {
           id: crypto.randomUUID(),
           type: "lexical",
@@ -64,14 +68,29 @@ export class LexicalDetector implements Detector {
 
   private makeExplanation(entry: { term: string; language: string; category: DetectionCategory }, matched: string): string {
     const categoryText: Record<DetectionCategory, string> = {
-      "lexical-marker": "terme fréquemment observé dans des textes générés par des LLM",
-      "discourse-structure": "structure discursive stéréotypée souvent observée dans des textes générés par des LLM",
-      "transition": "connecteur souvent utilisé de manière excessive dans des textes générés par des LLM",
-      "style-regularity": "régularité stylistique observée dans des textes générés par des LLM",
-      "anomaly": "formulation inhabituelle observée dans des textes générés par des LLM",
+      "lexical-marker": "un terme fréquemment observé dans des textes générés par des LLM",
+      "discourse-structure": "une structure discursive stéréotypée souvent observée dans des textes générés par des LLM",
+      "transition": "un connecteur souvent utilisé de manière excessive dans des textes générés par des LLM",
+      "style-regularity": "une régularité stylistique observée dans des textes générés par des LLM",
+      "anomaly": "une formulation inhabituelle observée dans des textes générés par des LLM",
     };
     return `Le terme « ${matched} » est ${categoryText[entry.category]}.`;
   }
+}
+
+const FUNCTION_WORDS = {
+  fr: new Set(["le", "la", "les", "de", "des", "du", "et", "est", "une", "un", "que", "qui", "dans", "pour", "pas", "il", "elle", "au", "sur", "d", "l"]),
+  en: new Set(["the", "and", "of", "to", "is", "a", "an", "that", "in", "it", "for", "with", "on", "are", "this", "be", "has"]),
+};
+
+/** Langue dominante d'après les mots outils ; undefined sans indice ou à égalité. */
+export function guessLanguage(text: string): "en" | "fr" | undefined {
+  let fr = 0, en = 0;
+  for (const w of text.toLowerCase().split(/[^\p{L}]+/u)) {
+    if (FUNCTION_WORDS.fr.has(w)) fr++;
+    if (FUNCTION_WORDS.en.has(w)) en++;
+  }
+  return fr > en ? "fr" : en > fr ? "en" : undefined;
 }
 
 function escapeRegex(term: string): string {

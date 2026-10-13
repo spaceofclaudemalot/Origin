@@ -3,7 +3,7 @@
  * Couvre : détection marqueurs, pas de faux positifs, filtre langue, caractères regex, déduplication, score borné.
  */
 import { describe, it, expect, beforeEach } from "vitest";
-import { LexicalDetector } from "./lexical";
+import { LexicalDetector, guessLanguage } from "./lexical";
 
 describe("LexicalDetector", () => {
   let detector: LexicalDetector;
@@ -99,5 +99,33 @@ describe("LexicalDetector offsets", () => {
     for (const d of result) {
       expect(text.slice(d.start, d.end).toLowerCase()).toBe(d.text.toLowerCase());
     }
+  });
+
+  it("terme présent dans les deux langues : suggestions dans la langue du texte", async () => {
+    const detector = new LexicalDetector();
+    const [fr] = await detector.detect("Il est crucial de la cultiver au quotidien dans toute équipe.");
+    expect(fr.suggestions.map((s) => s.text)).toEqual(["important", "décisif", "clé"]);
+    const [en] = await detector.detect("It is crucial to keep the team aligned with the plan.");
+    expect(en.suggestions.map((s) => s.text)).toEqual(["important", "essential", "vital"]);
+  });
+
+  it("explications grammaticales, avec article", async () => {
+    const result = await new LexicalDetector().detect("En somme, ce point reste essentiel.");
+    expect(result.map((d) => d.explanation)).toEqual([
+      "Le terme « En somme » est une structure discursive stéréotypée souvent observée dans des textes générés par des LLM.",
+      "Le terme « essentiel » est un terme fréquemment observé dans des textes générés par des LLM.",
+    ]);
+  });
+});
+
+describe("guessLanguage", () => {
+  it("reconnaît le français et l'anglais par leurs mots outils", () => {
+    expect(guessLanguage("La confiance est la base d'une équipe et il faut la cultiver.")).toBe("fr");
+    expect(guessLanguage("Trust is the basis of a team and it has to be built.")).toBe("en");
+  });
+
+  it("renvoie undefined sans indice", () => {
+    expect(guessLanguage("")).toBeUndefined();
+    expect(guessLanguage("crucial")).toBeUndefined();
   });
 });
