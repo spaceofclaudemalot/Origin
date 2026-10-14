@@ -3,7 +3,7 @@
   "name": "TextOrigin AI",
   "version": "0.2.0",
   "description": "Identifiez les marqueurs stylistiques des textes générés par l'IA",
-  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "permissions": ["storage", "activeTab", "scripting"],
   "action": {
     "default_popup": "src/popup/index.html",
     "default_title": "TextOrigin AI",
@@ -23,7 +23,7 @@
     "type": "module"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'"
+    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
   },
-  "minimum_chrome_version": "88"
+  "minimum_chrome_version": "102"
 }

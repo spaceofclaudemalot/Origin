@@ -20,7 +20,7 @@ import { create, get, list, type StoredDocument } from "../storage/documents";
 import { Shell, useLayout } from "./Shell";
 import { Chip, Menu, MenuItem } from "../ui/primitives";
 import { IMore } from "../ui/icons";
-import { withBackup } from "../storage/backup";
+import { pruneBackups, withBackup } from "../storage/backup";
 
 export function editorExtensions(): Extensions {
   return [...baseExtensions({ storedImage: StoredImageWithView }), AiMarkers, SignalHighlights, InvisibleMarks];
@@ -98,7 +98,9 @@ export const EditorApp: React.FC = () => {
       const wanted = new URLSearchParams(location.search).get("doc");
       let doc = wanted ? await get(wanted) : undefined;
       if (wanted && !doc) toast.show("Document introuvable", "warning");
-      doc ??= (await list())[0] ?? (await create());
+      const all = await list();
+      pruneBackups(all.map((d) => d.id));
+      doc ??= all[0] ?? (await create());
       await open(doc);
     })().catch((e) => {
       console.error("[TextOrigin] stockage indisponible:", e);

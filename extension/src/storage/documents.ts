@@ -1,4 +1,5 @@
 import type { JSONContent } from "@tiptap/core";
+import { clearBackup } from "./backup";
 
 /**
  * Seul accès à IndexedDB. Partagé par le popup et l'éditeur, qui ont la
@@ -150,6 +151,7 @@ export async function remove(id: string): Promise<void> {
   const doc = await get(id);
   if (!doc) return;
   await promisify((await store(DOCS, "readwrite")).delete(id));
+  clearBackup(id);
   // Une image collée dans un autre document reste référencée : on ne
   // supprime que celles qu'aucun document restant n'utilise.
   const stillUsed = new Set((await list()).flatMap((d) => collectImageIds(d.content)));

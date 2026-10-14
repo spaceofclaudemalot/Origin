@@ -160,3 +160,14 @@ export interface InvisibleReport {
   total: number;
   suspects: number;
 }
+
+/** Message du popup vers le service worker. */
+export interface AnalyzeRequest {
+  type: "ANALYZE_TEXT";
+  text: string;
+}
+
+/** Réponse du service worker à `AnalyzeRequest`. */
+export type AnalyzeResponse =
+  | { type: "ANALYSIS_READY"; result: AnalysisResult }
+  | { type: "ANALYSIS_ERROR"; error: string };

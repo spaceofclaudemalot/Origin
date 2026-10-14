@@ -1,1 +1,6 @@
 .superpowers/
+
+# Outillage local (agents, rendus vidéo)
+.claude-flow/
+.claude/
+brag-output*/

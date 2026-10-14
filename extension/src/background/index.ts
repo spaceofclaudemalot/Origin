@@ -1,24 +1,20 @@
 // Entrypoint du service worker principal de l'extension Chrome.
 // Sert l'analyse rapide demandée par le popup (ANALYZE_TEXT).
 import { createDetectorService } from "../analysis/service";
-import type { AnalysisResult } from "../types/types";
+import type { AnalysisResult, AnalyzeRequest, AnalyzeResponse } from "../types/types";
 
 const service = createDetectorService();
 
 chrome.runtime.onMessage.addListener(
   (
-    message: { type: string; text?: string },
+    message: Partial<AnalyzeRequest> | undefined,
     _sender,
-    sendResponse: (response: {
-      type: "ANALYSIS_READY" | "ANALYSIS_ERROR";
-      result?: AnalysisResult;
-      error?: string;
-    }) => void,
+    sendResponse: (response: AnalyzeResponse) => void,
   ) => {
     // Ignorer les messages destinés à d'autres listeners
-    if (message.type !== "ANALYZE_TEXT") return false;
+    if (message?.type !== "ANALYZE_TEXT") return false;
 
-    if (!message.text?.trim()) {
+    if (typeof message.text !== "string" || !message.text.trim()) {
       sendResponse({ type: "ANALYSIS_ERROR", error: "Texte manquant" });
       return false;
     }
