@@ -1,6 +1,28 @@
-.superpowers/
+# Dépendances et build
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
 
-# Outillage local (agents, rendus vidéo)
-.claude-flow/
+# Archives du build (à partager hors du dépôt)
+*.rar
+*.zip
+*.crx
+*.pem
+
+# Journaux, secrets, fichiers système
+*.log
+.env
+.env.*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Outillage local (agents, mémoire, journaux de plan, rendus vidéo)
 .claude/
+.claude-flow/
+.remember/
+.superpowers/
+docs/superpowers/plans/*/workspace/
 brag-output*/
