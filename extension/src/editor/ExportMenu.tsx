@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { toDocx } from "../export/toDocx";
 import { downloadBlob, sanitizeFilename } from "../export/download";
 import { getImage } from "../storage/documents";
 import { useToast } from "./Toast";
@@ -17,6 +16,8 @@ export const ExportMenu: React.FC<{ editor: Editor | null; title: string }> = ({
     if (!editor) return;
     setBusy(true);
     try {
+      // Chargée à la demande : la bibliothèque docx pèse lourd et ne sert qu'à l'export Word
+      const { toDocx } = await import("../export/toDocx");
       const blob = await toDocx(editor.getJSON(), { title, getImage });
       downloadBlob(blob, sanitizeFilename(title, "docx"));
     } catch (e) {
