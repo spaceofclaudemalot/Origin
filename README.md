@@ -1,27 +1,29 @@
 # TextOrigin AI
 
-Extension Chrome (Manifest V3) qui repère les marqueurs stylistiques souvent associés aux textes générés par des LLM, les surligne dans un éditeur intégré, explique chaque signalement et propose des reformulations.
+A Chrome extension (Manifest V3) that spots the stylistic markers often associated with LLM-generated text, highlights them in a built-in editor, explains each one and suggests rewrites.
 
-> Indices stylistiques, pas une preuve. Un texte académique formel ou celui d'un auteur non natif peut produire des faux positifs. Le score ne dit jamais « écrit par une IA ».
+> Stylistic hints, not proof. Formal academic writing and text by non-native authors can trigger false positives. The score never says "written by an AI".
 
-Tout tourne en local : aucun appel réseau, aucun LLM.
+Everything runs locally: no network calls, no LLM.
 
-## Ce que l'extension détecte
+It analyzes **English and French** text. The interface itself is in French for now, and so are the design docs under `docs/`.
 
-Le score global (0 à 100) combine quatre familles de signaux :
+## What it detects
 
-| Famille | Poids | Exemples |
+The overall score (0 to 100) combines four families of signals:
+
+| Family | Weight | Examples |
 |---|---|---|
-| Vocabulaire | 30 % | « crucial », « holistique », « tapisserie », « paysage numérique », `delve`, `tapestry` |
-| Connecteurs | 20 % | densité de « de plus », « en outre », `furthermore` |
-| Formulations | 25 % | énumérations par trois, « Ce n'est pas seulement X, c'est Y », clôtures et préambules de chatbot |
-| Régularité | 25 % | rythme des phrases, homogénéité des paragraphes |
+| Vocabulary | 30 % | `delve`, `tapestry`, `holistic`, « crucial », « holistique », « tapisserie », « paysage numérique » |
+| Connectors | 20 % | density of `furthermore`, `moreover`, « de plus », « en outre » |
+| Phrasing | 25 % | rule-of-three lists, "not just X, it's Y" (« Ce n'est pas seulement X, c'est Y »), chatbot openers and closers |
+| Regularity | 25 % | sentence rhythm, paragraph uniformity |
 
-La confiance du score est « haute » quand au moins trois familles sont en alerte, « moyenne » avec deux, « faible » sinon ou si le texte est trop court. Français et anglais sont gérés ; les règles propres à une langue ne s'appliquent pas à l'autre. Les caractères invisibles (espaces de largeur nulle, etc.) sont aussi signalés.
+The score's reliability is "high" when at least three families are in alert, "medium" with two, and "limited" otherwise or when the text is too short. Rules specific to one language are not applied to the other. Invisible characters (zero-width spaces and the like) are flagged too.
 
-Le catalogue de motifs s'appuie sur [blader/humanizer](https://github.com/blader/humanizer) (MIT). Le détail de l'intégration est dans [`docs/superpowers/specs/2026-10-20-humanizer-design.md`](docs/superpowers/specs/2026-10-20-humanizer-design.md).
+The pattern catalogue draws on [blader/humanizer](https://github.com/blader/humanizer) (MIT). Integration details are in [`docs/superpowers/specs/2026-10-20-humanizer-design.md`](docs/superpowers/specs/2026-10-20-humanizer-design.md) (in French).
 
-## Installation
+## Install
 
 ```bash
 cd extension
@@ -29,34 +31,36 @@ npm install
 npm run build
 ```
 
-Puis dans Chrome : `chrome://extensions` → mode développeur → « Charger l'extension non empaquetée » → dossier `extension/dist`.
+Then in Chrome: `chrome://extensions` → turn on Developer mode → "Load unpacked" → pick the `extension/dist` folder.
 
-Le popup analyse la sélection ou la page ; l'éditeur (`src/editor`) s'ouvre dans un onglet.
+The popup analyzes the current selection; the editor (`src/editor`) opens in a tab.
 
-## Développement
+## Development
+
+Run these from the `extension/` folder:
 
 ```bash
-npm run dev        # serveur Vite, éditeur sur http://localhost:5173/src/editor/index.html
-npm test           # tests unitaires (Vitest)
-npm run test:perf  # tests de performance
+npm run dev        # Vite server, editor at http://localhost:5173/src/editor/index.html
+npm test           # unit tests (Vitest)
+npm run test:perf  # performance tests
 npm run lint
 ```
 
-Le serveur de dev ne fournit pas les API `chrome.*` : seul l'éditeur y fonctionne, pas le popup.
+The dev server does not provide the `chrome.*` APIs, so only the editor works there, not the popup. GitHub Actions runs the tests and the build on every pull request.
 
-## Structure
+## Project layout
 
-- `extension/src/detectors/` : un détecteur par famille (`lexical`, `connectors`, `stereotypes`, `rhythm`, `paragraphs`, `invisibles`) et leurs données.
-- `extension/src/analysis/` : scoring, seuils, segmentation, analyse en direct.
-- `extension/src/editor/`, `extension/src/popup/` : interfaces.
-- `extension/src/background/` : service worker.
-- `cahier_des_charges.md` : cahier des charges d'origine.
-- `docs/superpowers/` : specs et plans de conception.
+- `extension/src/detectors/`: one detector per family (`lexical`, `connectors`, `stereotypes`, `rhythm`, `paragraphs`, `invisibles`) and their data.
+- `extension/src/analysis/`: scoring, thresholds, segmentation, live analysis.
+- `extension/src/editor/`, `extension/src/popup/`: user interfaces.
+- `extension/src/background/`: service worker.
+- `cahier_des_charges.md`: the original product brief (in French).
+- `docs/superpowers/`: design specs and plans (in French).
 
-## Retours et bugs
+## Feedback and bugs
 
-Le bouton en forme d'enveloppe, en bas du rail de l'éditeur, ouvre votre client mail avec un modèle prérempli vers claude.malot@creativeori.com. Le message contient la version de l'extension et le navigateur, jamais le texte analysé.
+The envelope button at the bottom of the editor's side rail opens your mail client with a pre-filled template addressed to claude.malot@creativeori.com. The message includes the extension version and your browser, never the analyzed text.
 
-## Licence
+## License
 
-[MIT](LICENSE) © 2026 Claude Malot. Le catalogue de motifs d'Humanizer, dont ce projet s'inspire, est lui aussi sous licence MIT.
+[MIT](LICENSE) © 2026 Claude Malot. The Humanizer pattern catalogue this project draws on is also MIT-licensed.
