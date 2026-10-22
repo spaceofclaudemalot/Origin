@@ -6,31 +6,20 @@ import { setSignalHighlight } from "./extensions/SignalHighlights";
 import { matchCase } from "../analysis/live";
 import { buildTextIndex, mapRange, mapRanges } from "../analysis/positions";
 import { cleanupTransaction } from "./invisibleCleanup";
-import { FAMILY_LABEL, FAMILY_OF_TYPE } from "../analysis/scoring";
+import { familyLabel, FAMILY_OF_TYPE } from "../analysis/scoring";
+import { quotes, t, tn, useLang, type Key } from "../i18n";
 import type { useLiveAnalysis } from "./useLiveAnalysis";
 import { Button, Card, Chip, Collapsible, IconButton } from "../ui/primitives";
 import { ScoreGauge } from "../ui/ScoreGauge";
 import { IEye, IEyeOff } from "../ui/icons";
 
-export const CATEGORY_LABEL: Record<DetectionCategory, string> = {
-  "lexical-marker": "Marqueur lexical",
-  "discourse-structure": "Formulation stéréotypée",
-  transition: "Connecteur excessif",
-  "style-regularity": "Régularité stylistique",
-  anomaly: "Anomalie stylistique",
-};
+export const categoryLabel = (category: DetectionCategory): string => t(`category.${category}`);
 
 const LEVEL_DOT = { low: "bg-accent/30", medium: "bg-accent/60", high: "bg-accent" } as const;
 // « Faible » désigne déjà la tranche du score : la fiabilité parle de la solidité du verdict, pas de son niveau
-const CONFIDENCE_LABEL: Record<string, string> = { high: "élevée", medium: "moyenne", low: "limitée" };
-const CONFIDENCE_HINT =
-  "Fiabilité du score : élevée si au moins 3 familles de signaux sont en alerte, moyenne avec 2, limitée sinon ou si le texte est trop court.";
 const STATUS_ICON: Record<GlobalSignal["status"], string> = { ok: "✓", alert: "⚠", insufficient: "⋯" };
 const MARKER_FAMILIES: SignalFamily[] = ["vocabulary", "connectors", "stereotypes"];
 const ICON = "w-[18px] h-[18px]";
-
-export const WARNING =
-  "Indices stylistiques, pas une preuve. Les textes académiques formels et ceux d'auteurs non natifs produisent des faux positifs.";
 
 /** Demande venue d'une étiquette de marge : montrer ces détections ou ces signaux. */
 export interface PanelFocus {
@@ -58,39 +47,19 @@ function reveal(editor: Editor, detection: Detection) {
   editor.chain().focus().setTextSelection(range).scrollIntoView().run();
 }
 
-const INVISIBLE_LABEL: Record<string, string> = {
-  ZWSP: "Espace de largeur nulle",
-  ZWNJ: "Anti-liant de largeur nulle",
-  ZWJ: "Liant de largeur nulle",
-  WJ: "Gluon de mots",
-  BOM: "Indicateur d'ordre des octets",
-  SHY: "Trait d'union conditionnel",
-  CGJ: "Graphème combinant",
-  MVS: "Séparateur de voyelle mongol",
-  LRM: "Marque gauche-à-droite",
-  RLM: "Marque droite-à-gauche",
-  FILLER: "Caractère de remplissage",
-  INVOP: "Opérateur mathématique invisible",
-  NBSP: "Espace insécable",
-  NNBSP: "Espace fine insécable",
-  ENSP: "Espace demi-cadratin",
-  EMSP: "Espace cadratin",
-  SPACE: "Espace typographique",
-  FIGSP: "Espace de chiffre",
-  PUNCSP: "Espace de ponctuation",
-  THSP: "Espace fine",
-  HSP: "Espace ultra-fine",
-  IDSP: "Espace idéographique",
-  TAG: "Caractères « tag » (texte caché)",
-  VS: "Sélecteur de variante",
-};
-const invisibleLabel = (name: string) => INVISIBLE_LABEL[name] ?? "Contrôle bidirectionnel";
+const INVISIBLE_KINDS = new Set([
+  "ZWSP", "ZWNJ", "ZWJ", "WJ", "BOM", "SHY", "CGJ", "MVS", "LRM", "RLM", "FILLER", "INVOP", "NBSP", "NNBSP",
+  "ENSP", "EMSP", "SPACE", "FIGSP", "PUNCSP", "THSP", "HSP", "IDSP", "TAG", "VS",
+]);
+const invisibleLabel = (name: string) => t(INVISIBLE_KINDS.has(name) ? (`inv.kind.${name}` as Key) : "inv.kind.bidi");
 
 /** Caractères invisibles : indice de copier-coller ou de manipulation, hors score. */
 const InvisiblesSection: React.FC<{ editor: Editor | null; report: InvisibleReport; sourceText: string }> = ({
   editor, report, sourceText,
 }) => {
-  const groups = new Map<string, { count: number; severity: InvisibleFinding["severity"]; first: InvisibleFinding }>();
+  useLang();
+  const [qOpen, qClose] = quotes();
+  const groups =new Map<string, { count: number; severity: InvisibleFinding["severity"]; first: InvisibleFinding }>();
   for (const f of report.findings) {
     const g = groups.get(f.name);
     if (g) g.count += f.count;
@@ -117,17 +86,17 @@ const InvisiblesSection: React.FC<{ editor: Editor | null; report: InvisibleRepo
   };
 
   return (
-    <Collapsible id="invisibles" title="Caractères invisibles" count={report.total}>
+    <Collapsible id="invisibles" title={t("inv.title")} count={report.total}>
       <div className="space-y-2">
         {report.suspects > 0 && (
           <div role="alert" className="rounded-card border border-accent/50 bg-accent/10 shadow-[0_0_12px_rgb(var(--to-accent)/0.25)] p-2.5 text-2xs">
             <strong className="text-accent-text">
-              {report.suspects} caractère{report.suspects > 1 ? "s" : ""} suspect{report.suspects > 1 ? "s" : ""}
+              {tn("inv.suspect", report.suspects)}
             </strong>{" "}
-            : contenu caché ou inversion du sens de lecture, souvent utilisé pour dissimuler des consignes.
+            {t("inv.suspectBody")}
             {hidden && (
               <p className="mt-1 break-words">
-                Texte caché : « <em>{hidden}</em> »
+                {t("inv.hidden")} {qOpen}<em>{hidden}</em>{qClose}
               </p>
             )}
           </div>
@@ -146,10 +115,10 @@ const InvisiblesSection: React.FC<{ editor: Editor | null; report: InvisibleRepo
           ))}
         </ul>
         <p className="text-2xs text-muted">
-          Indice de copier-coller depuis un outil (IA ou autre), pas une preuve de rédaction par IA. Non compté dans le score.
+          {t("inv.note")}
         </p>
         <Button variant="secondary" className="w-full" onClick={clean}>
-          Nettoyer le texte
+          {t("inv.clean")}
         </Button>
       </div>
     </Collapsible>
@@ -168,7 +137,9 @@ export const AnalysisPanel: React.FC<{
   onFocusSeen: () => void;
   onVisibleChange: (visible: boolean) => void;
 }> = ({ editor, analysis, highlighted, onHighlight, focus, onFocusSeen, onVisibleChange }) => {
+  useLang();
   const { result, state, sourceText } = analysis;
+  const [qOpen, qClose] = quotes();
   const visible = editor ? markersVisible(editor.state) : true;
   const [openId, setOpenId] = useState<string | null>(null);
   // Sections ouvertes à la demande d'une étiquette de marge (sinon état mémorisé)
@@ -234,25 +205,27 @@ export const AnalysisPanel: React.FC<{
   return (
     <div className="p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xs font-semibold uppercase tracking-wider text-muted">Analyse</h2>
-        <IconButton label={visible ? "Masquer les marqueurs" : "Afficher les marqueurs"} onClick={toggleVisible} disabled={!editor}>
+        <h2 className="text-2xs font-semibold uppercase tracking-wider text-muted">{t("panel.title")}</h2>
+        <IconButton label={visible ? t("panel.hide") : t("panel.show")} onClick={toggleVisible} disabled={!editor}>
           {visible ? <IEye className={ICON} /> : <IEyeOff className={ICON} />}
         </IconButton>
       </div>
 
       <Card className="p-4">
-        {state === "empty" && <p className="text-[13px] text-muted">Écrivez ou collez du texte pour l'analyser.</p>}
+        {state === "empty" && <p className="text-[13px] text-muted">{t("panel.empty")}</p>}
         {state === "error" && (
-          <p className="text-[13px] text-accent-text" role="alert">Analyse indisponible. Nouvel essai à la prochaine modification.</p>
+          <p className="text-[13px] text-accent-text" role="alert">{t("panel.error")}</p>
         )}
         {result && state !== "empty" && (
           <ScoreGauge
             score={result.totalScore}
             caption={
               <>
-                {result.wordCount} mots ·{" "}
-                <span title={CONFIDENCE_HINT}>fiabilité {CONFIDENCE_LABEL[result.confidence] ?? result.confidence}</span>
-                {state === "running" && " · mise à jour…"}
+                {t("panel.words", { count: result.wordCount })} ·{" "}
+                <span title={t("panel.reliability.hint")}>
+                  {t("panel.reliability", { level: t(`panel.reliability.${result.confidence}` as Key) })}
+                </span>
+                {state === "running" && ` · ${t("panel.updating")}`}
               </>
             }
           />
@@ -261,15 +234,15 @@ export const AnalysisPanel: React.FC<{
 
       {result && state !== "empty" && (
         <>
-          <Collapsible id="families" title="Familles">
+          <Collapsible id="families" title={t("panel.families")}>
             <ul className="space-y-2">
               {result.families.map((f) => (
                 <li key={f.family} className={`text-[13px] ${f.measurable ? "" : "text-muted"}`}>
                   <div className="flex justify-between">
                     <span>
-                      {FAMILY_LABEL[f.family]} <span className="text-2xs text-muted">({Math.round(f.weight * 100)} %)</span>
+                      {familyLabel(f.family)} <span className="text-2xs text-muted">({Math.round(f.weight * 100)} %)</span>
                     </span>
-                    <span className="font-medium">{f.measurable ? f.score : "texte trop court"}</span>
+                    <span className="font-medium">{f.measurable ? f.score : t("panel.tooShort")}</span>
                   </div>
                   {f.measurable && (
                     <div className="h-1.5 mt-1 bg-line rounded-full" aria-hidden="true">
@@ -284,7 +257,7 @@ export const AnalysisPanel: React.FC<{
             </ul>
           </Collapsible>
 
-          <Collapsible {...sectionProps("signals")} title="Signaux globaux" count={alerts}>
+          <Collapsible {...sectionProps("signals")} title={t("panel.signals")} count={alerts}>
             <div className="space-y-2">
               {result.signals.map((s) => (
                 <div
@@ -298,11 +271,11 @@ export const AnalysisPanel: React.FC<{
                     </span>
                     <span className="font-medium">{s.label}</span>
                   </div>
-                  <div className="text-2xs text-muted mt-0.5">{s.status === "insufficient" ? "Texte trop court" : s.display}</div>
+                  <div className="text-2xs text-muted mt-0.5">{s.status === "insufficient" ? t("panel.tooShortCap") : s.display}</div>
                   <p className="text-2xs text-muted mt-1">{s.explanation}</p>
                   {s.status === "alert" && (
                     <Chip as="button" tone="outline" className="mt-2" onClick={() => onHighlight(highlighted === s.id ? null : s.id)}>
-                      {highlighted === s.id ? "Retirer le surlignage" : "Surligner les phrases"}
+                      {highlighted === s.id ? t("panel.unhighlight") : t("panel.highlight")}
                     </Chip>
                   )}
                 </div>
@@ -315,13 +288,13 @@ export const AnalysisPanel: React.FC<{
           )}
 
           {detections.length === 0 ? (
-            <p className="text-[13px] text-muted">Aucun marqueur détecté.</p>
+            <p className="text-[13px] text-muted">{t("panel.none")}</p>
           ) : (
             MARKER_FAMILIES.map((family) => {
               const list = detections.filter((d) => FAMILY_OF_TYPE[d.type] === family);
               if (!list.length) return null;
               return (
-                <Collapsible key={family} {...sectionProps(familySection(family))} title={FAMILY_LABEL[family]} count={list.length}>
+                <Collapsible key={family} {...sectionProps(familySection(family))} title={familyLabel(family)} count={list.length}>
                   <ul className="space-y-1.5">
                     {list.map((d) => {
                       const original = sourceText.slice(d.start, d.end) || d.text;
@@ -335,7 +308,7 @@ export const AnalysisPanel: React.FC<{
                             }}
                           >
                             <span className={`w-2 h-2 shrink-0 rounded-full ${LEVEL_DOT[markerLevel(d.score)]}`} aria-hidden="true" />
-                            <span className="font-medium truncate">« {original} »</span>
+                            <span className="font-medium truncate">{qOpen}{original}{qClose}</span>
                           </button>
                           {openId === d.id && (
                             <div className="mt-2 space-y-2">
@@ -349,7 +322,7 @@ export const AnalysisPanel: React.FC<{
                                     tone={s.text ? "accent" : "outline"}
                                     onClick={() => editor && applySuggestion(editor, d, original, s.text)}
                                   >
-                                    {s.text ? `→ ${matchCase(original, s.text)}` : "Supprimer"}
+                                    {s.text ? `→ ${matchCase(original, s.text)}` : t("panel.remove")}
                                   </Chip>
                                 ))}
                               </div>
@@ -367,7 +340,7 @@ export const AnalysisPanel: React.FC<{
       )}
 
       <p className="rounded-card bg-raised/70 border border-line p-3 text-2xs text-muted" role="note">
-        {WARNING}
+        {t("panel.warning")}
       </p>
     </div>
   );

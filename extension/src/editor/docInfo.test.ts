@@ -1,5 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { wordCountOf, relativeDate } from "./docInfo";
+import { wordCountOf, relativeDate, displayTitle } from "./docInfo";
+import { setLang } from "../i18n/core";
+
+describe("displayTitle et dates selon la langue", () => {
+  it("affiche le titre par défaut dans la langue courante, jamais un titre choisi", () => {
+    expect(displayTitle("Sans titre")).toBe("Sans titre");
+    expect(displayTitle("")).toBe("Sans titre");
+    setLang("en");
+    try {
+      expect(displayTitle("Sans titre")).toBe("Untitled");
+      expect(displayTitle("   ")).toBe("Untitled");
+      expect(displayTitle("Mon rapport")).toBe("Mon rapport");
+      const now = new Date(2026, 9, 9, 12, 0).getTime();
+      expect(relativeDate(now - 5 * 60_000, now)).toBe("5 min ago");
+      expect(relativeDate(new Date(2026, 8, 1).getTime(), now)).toBe("01/09/2026");
+    } finally {
+      setLang("fr");
+    }
+  });
+});
 
 const p = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] });
 

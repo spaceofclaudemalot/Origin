@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { list, remove, update, type StoredDocument } from "../storage/documents";
 import { useToast } from "./Toast";
-import { relativeDate, wordCountOf } from "./docInfo";
+import { displayTitle, relativeDate, wordCountOf } from "./docInfo";
 import { Button, IconButton } from "../ui/primitives";
 import { IEdit, IPlus, ISearch, ITrash } from "../ui/icons";
+import { t, useLang } from "../i18n";
 
 const RECENT_COUNT = 5;
 const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
@@ -24,6 +25,7 @@ export const DocumentList: React.FC<{
   /** Change quand la liste doit être relue (document ouvert, enregistrement). */
   refreshKey: string;
 }> = ({ currentId, onOpen, onCurrentRenamed, beforeAction, onNew, deleteRequested, onDeleteRequestSeen, refreshKey }) => {
+  useLang();
   const toast = useToast();
   const [docs, setDocs] = useState<StoredDocument[]>([]);
   const [query, setQuery] = useState("");
@@ -34,7 +36,7 @@ export const DocumentList: React.FC<{
     try {
       setDocs(await list());
     } catch {
-      toast.show("Impossible de lire vos documents.", "error");
+      toast.show(t("docs.readFailed"), "error");
     }
   }, [toast]);
 
@@ -55,7 +57,7 @@ export const DocumentList: React.FC<{
       await refresh();
     } catch (e) {
       console.error("[TextOrigin] action document:", e);
-      toast.show("L'opération a échoué.", "error");
+      toast.show(t("docs.failed"), "error");
     }
   };
 
@@ -91,7 +93,7 @@ export const DocumentList: React.FC<{
             value={renaming.title}
             onChange={(e) => setRenaming({ id: d.id, title: e.target.value })}
             onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setRenaming(null); } }}
-            aria-label="Nouveau titre"
+            aria-label={t("docs.newTitle")}
             className="flex-1 min-w-0 h-8 bg-raised border border-line rounded-ctl px-2 text-[13px] outline-none focus:border-accent"
           />
           <Button size="sm" type="submit">OK</Button>
@@ -101,10 +103,10 @@ export const DocumentList: React.FC<{
     if (confirmDelete === d.id) {
       return (
         <div className="rounded-ctl bg-raised border border-accent/40 p-2 space-y-2 text-[13px]">
-          <p>Supprimer « {d.title} » ?</p>
+          <p>{t("docs.confirmDelete", { title: displayTitle(d.title) })}</p>
           <div className="flex gap-1.5">
-            <Button size="sm" onClick={() => void doDelete(d.id)}>Supprimer</Button>
-            <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(null)}>Annuler</Button>
+            <Button size="sm" onClick={() => void doDelete(d.id)}>{t("docs.delete")}</Button>
+            <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(null)}>{t("docs.cancel")}</Button>
           </div>
         </div>
       );
@@ -122,16 +124,16 @@ export const DocumentList: React.FC<{
           aria-current={active ? "page" : undefined}
           onClick={() => { if (!active) onOpen(d); }}
         >
-          <div className="text-[13px] font-medium truncate">{d.title || "Sans titre"}</div>
+          <div className="text-[13px] font-medium truncate">{displayTitle(d.title)}</div>
           <div className="text-2xs text-muted">
-            {relativeDate(d.updatedAt)} · {wordCountOf(d.content)} mots
+            {t("docs.meta", { when: relativeDate(d.updatedAt), count: wordCountOf(d.content) })}
           </div>
         </button>
         <div className="flex pr-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
-          <IconButton label="Renommer" className="h-7 min-w-7" onClick={() => setRenaming({ id: d.id, title: d.title })}>
+          <IconButton label={t("docs.rename")} className="h-7 min-w-7" onClick={() => setRenaming({ id: d.id, title: d.title })}>
             <IEdit className="w-4 h-4" />
           </IconButton>
-          <IconButton label="Supprimer" className="h-7 min-w-7" onClick={() => setConfirmDelete(d.id)}>
+          <IconButton label={t("docs.delete")} className="h-7 min-w-7" onClick={() => setConfirmDelete(d.id)}>
             <ITrash className="w-4 h-4" />
           </IconButton>
         </div>
@@ -142,8 +144,8 @@ export const DocumentList: React.FC<{
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 pt-4">
-        <h2 className="text-2xs font-semibold uppercase tracking-wider text-muted">Documents</h2>
-        <IconButton label="Nouveau document" onClick={onNew}>
+        <h2 className="text-2xs font-semibold uppercase tracking-wider text-muted">{t("docs.title")}</h2>
+        <IconButton label={t("docs.new")} onClick={onNew}>
           <IPlus className="w-4 h-4" />
         </IconButton>
       </div>
@@ -153,8 +155,8 @@ export const DocumentList: React.FC<{
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher"
-            aria-label="Rechercher un document"
+            placeholder={t("docs.search")}
+            aria-label={t("docs.searchLabel")}
             className="flex-1 min-w-0 bg-transparent text-[13px] text-ink placeholder:text-muted outline-none"
           />
         </label>
@@ -162,17 +164,17 @@ export const DocumentList: React.FC<{
       <div className="flex-1 overflow-auto px-2 pb-4">
         {q ? (
           <>
-            <Heading>Résultats</Heading>
-            {shown.length === 0 && <p className="px-3 py-2 text-2xs text-muted">Aucun document.</p>}
+            <Heading>{t("docs.results")}</Heading>
+            {shown.length === 0 && <p className="px-3 py-2 text-2xs text-muted">{t("docs.none")}</p>}
             <ul className="space-y-0.5">{shown.map((d) => <li key={d.id}>{row(d)}</li>)}</ul>
           </>
         ) : (
           <>
-            <Heading>Récents</Heading>
+            <Heading>{t("docs.recent")}</Heading>
             <ul className="space-y-0.5">{docs.slice(0, RECENT_COUNT).map((d) => <li key={d.id}>{row(d)}</li>)}</ul>
             {docs.length > RECENT_COUNT && (
               <>
-                <Heading>Tous les documents</Heading>
+                <Heading>{t("docs.all")}</Heading>
                 <ul className="space-y-0.5">{docs.slice(RECENT_COUNT).map((d) => <li key={d.id}>{row(d)}</li>)}</ul>
               </>
             )}

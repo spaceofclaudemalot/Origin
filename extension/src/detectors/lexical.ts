@@ -2,6 +2,7 @@ import type { Detection, DetectionCategory, Detector, SignalFamily } from "../ty
 import { LEXICAL_ENTRIES } from "./lexical-data";
 import type { LexicalEntry } from "./lexical-data";
 import { wordBoundary } from "../analysis/stats";
+import { t } from "../i18n/core";
 
 /**
  * Détection basée sur une base de termes et expressions (module 1 du cahier des charges).
@@ -51,7 +52,7 @@ export class LexicalDetector implements Detector {
           suggestions: entry.replacements.map((rep) => ({
             type: "replace",
             text: rep,
-            reason: `Remplacer « ${m[0]} » par « ${rep} » pour un style plus naturel.`,
+            reason: t("lex.reason", { text: m[0], rep }),
           })),
         });
       }
@@ -67,14 +68,7 @@ export class LexicalDetector implements Detector {
   }
 
   private makeExplanation(entry: { term: string; language: string; category: DetectionCategory }, matched: string): string {
-    const categoryText: Record<DetectionCategory, string> = {
-      "lexical-marker": "un terme fréquemment observé dans des textes générés par des LLM",
-      "discourse-structure": "une structure discursive stéréotypée souvent observée dans des textes générés par des LLM",
-      "transition": "un connecteur souvent utilisé de manière excessive dans des textes générés par des LLM",
-      "style-regularity": "une régularité stylistique observée dans des textes générés par des LLM",
-      "anomaly": "une formulation inhabituelle observée dans des textes générés par des LLM",
-    };
-    return `Le terme « ${matched} » est ${categoryText[entry.category]}.`;
+    return t(`lex.why.${entry.category}`, { text: matched });
   }
 }
 

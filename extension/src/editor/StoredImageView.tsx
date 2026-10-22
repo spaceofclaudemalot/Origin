@@ -4,6 +4,7 @@ import type { EditorView } from "@tiptap/pm/view";
 import { StoredImage } from "./extensions/StoredImage";
 import { getImage, putImage } from "../storage/documents";
 import { prepareImage, validateImage } from "./images";
+import { t } from "../i18n/core";
 
 const StoredImageComponent: React.FC<NodeViewProps> = ({ node }) => {
   const [src, setSrc] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export async function insertImageFiles(
       view.dispatch(tr.scrollIntoView());
     } catch (e) {
       console.error("[TextOrigin] insertion d'image impossible:", e);
-      notify("Impossible d'insérer l'image.");
+      notify(t("image.insertFailed"));
     }
   }
 }

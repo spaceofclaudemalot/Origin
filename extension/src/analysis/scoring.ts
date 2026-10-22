@@ -1,5 +1,6 @@
 import type { Detection, DetectionType, FamilyScore, GlobalSignal, SignalFamily } from "../types/types";
 import { ALERT_SCORE, FAMILY_WEIGHTS, MIN_WORDS_CONFIDENT, MIN_WORDS_DENSITY, STEREOTYPE_MAX_DENSITY, VOCAB_MAX_DENSITY } from "./thresholds";
+import { t } from "../i18n/core";
 
 export const FAMILY_OF_TYPE: Record<DetectionType, SignalFamily> = {
   lexical: "vocabulary",
@@ -8,12 +9,7 @@ export const FAMILY_OF_TYPE: Record<DetectionType, SignalFamily> = {
   stylistic: "regularity",
 };
 
-export const FAMILY_LABEL: Record<SignalFamily, string> = {
-  vocabulary: "Vocabulaire",
-  connectors: "Connecteurs",
-  stereotypes: "Formulations",
-  regularity: "Régularité",
-};
+export const familyLabel = (family: SignalFamily): string => t(`family.${family}`);
 
 const FAMILIES: SignalFamily[] = ["vocabulary", "connectors", "stereotypes", "regularity"];
 

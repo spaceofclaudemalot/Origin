@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { t, useLang } from "../i18n";
 
 type ToastKind = "info" | "warning" | "error";
 interface ToastItem { id: number; message: string; kind: ToastKind; leaving?: boolean }
@@ -16,6 +17,7 @@ const KIND_CLASS: Record<ToastKind, string> = {
 };
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  useLang();
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
 
@@ -39,19 +41,19 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider value={api}>
       {children}
       <div className="no-print fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2" aria-live="polite">
-        {items.map((t) => (
+        {items.map((item) => (
           <div
-            key={t.id}
-            role={t.kind === "error" ? "alert" : "status"}
-            className={`${KIND_CLASS[t.kind]} ${
-              t.leaving ? "animate-rise-out" : "animate-rise-in"
+            key={item.id}
+            role={item.kind === "error" ? "alert" : "status"}
+            className={`${KIND_CLASS[item.kind]} ${
+              item.leaving ? "animate-rise-out" : "animate-rise-in"
             } motion-reduce:animate-fade-in font-ui border text-[13px] pl-4 pr-2 py-2 rounded-card shadow-lift flex items-center gap-3`}
           >
-            <span>{t.message}</span>
+            <span>{item.message}</span>
             <button
               type="button"
-              aria-label="Fermer la notification"
-              onClick={() => dismiss(t.id)}
+              aria-label={t("toast.close")}
+              onClick={() => dismiss(item.id)}
               className="h-6 w-6 shrink-0 rounded-ctl inline-flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity duration-150"
             >
               <span aria-hidden="true">×</span>

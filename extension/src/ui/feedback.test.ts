@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { FEEDBACK_EMAIL, feedbackUrl } from "./feedback";
+import { setLang } from "../i18n/core";
 
 describe("feedbackUrl", () => {
   const url = feedbackUrl({ version: "0.2.0", userAgent: "Mozilla/5.0 Test" });
@@ -26,6 +27,18 @@ describe("feedbackUrl", () => {
 
   it("précise que le texte analysé n'est pas joint", () => {
     expect(params.get("body")).toMatch(/n'est pas joint/);
+  });
+
+  it("écrit le modèle en anglais quand l'interface est en anglais", () => {
+    setLang("en");
+    try {
+      const en = new URLSearchParams(feedbackUrl({ version: "0.2.0", userAgent: "UA" }).split("?")[1]);
+      expect(en.get("subject")).toBe("[TextOrigin AI] Feedback or bug");
+      expect(en.get("body")).toContain("Version: 0.2.0");
+      expect(en.get("body")).toContain("is not attached");
+    } finally {
+      setLang("fr");
+    }
   });
 
   it("indique « inconnue » sans version", () => {
