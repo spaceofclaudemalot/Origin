@@ -10,6 +10,7 @@
   --to-muted: 95 90 82;
   --to-accent: 223 88 48;
   --to-accent-ink: 255 255 255;
+  --to-accent-text: 168 58 24;
   --to-band-low: 169 184 164;
   --to-band-mid: 185 180 170;
   --to-band-notable: 226 161 131;
@@ -47,6 +48,7 @@ body {
     --to-ink: 236 233 227;
     --to-muted: 157 152 143;
     --to-accent: 232 104 63;
+    --to-accent-text: 238 122 84;
     --to-band-low: 127 143 123;
     --to-band-mid: 90 87 81;
     --to-band-notable: 168 100 74;

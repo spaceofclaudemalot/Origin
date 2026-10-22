@@ -21,7 +21,10 @@ export const CATEGORY_LABEL: Record<DetectionCategory, string> = {
 };
 
 const LEVEL_DOT = { low: "bg-accent/30", medium: "bg-accent/60", high: "bg-accent" } as const;
-const CONFIDENCE_LABEL: Record<string, string> = { high: "haute", medium: "moyenne", low: "faible" };
+// « Faible » désigne déjà la tranche du score : la fiabilité parle de la solidité du verdict, pas de son niveau
+const CONFIDENCE_LABEL: Record<string, string> = { high: "élevée", medium: "moyenne", low: "limitée" };
+const CONFIDENCE_HINT =
+  "Fiabilité du score : élevée si au moins 3 familles de signaux sont en alerte, moyenne avec 2, limitée sinon ou si le texte est trop court.";
 const STATUS_ICON: Record<GlobalSignal["status"], string> = { ok: "✓", alert: "⚠", insufficient: "⋯" };
 const MARKER_FAMILIES: SignalFamily[] = ["vocabulary", "connectors", "stereotypes"];
 const ICON = "w-[18px] h-[18px]";
@@ -118,7 +121,7 @@ const InvisiblesSection: React.FC<{ editor: Editor | null; report: InvisibleRepo
       <div className="space-y-2">
         {report.suspects > 0 && (
           <div role="alert" className="rounded-card border border-accent/50 bg-accent/10 shadow-[0_0_12px_rgb(var(--to-accent)/0.25)] p-2.5 text-2xs">
-            <strong className="text-accent">
+            <strong className="text-accent-text">
               {report.suspects} caractère{report.suspects > 1 ? "s" : ""} suspect{report.suspects > 1 ? "s" : ""}
             </strong>{" "}
             : contenu caché ou inversion du sens de lecture, souvent utilisé pour dissimuler des consignes.
@@ -134,7 +137,7 @@ const InvisiblesSection: React.FC<{ editor: Editor | null; report: InvisibleRepo
             <li key={name}>
               <button
                 onClick={() => select(g.first)}
-                className={`w-full flex justify-between gap-2 text-[13px] text-left rounded-ctl px-2 py-1 hover:bg-raised ${g.severity === "suspect" ? "text-accent" : ""}`}
+                className={`w-full flex justify-between gap-2 text-[13px] text-left rounded-ctl px-2 py-1 hover:bg-raised ${g.severity === "suspect" ? "text-accent-text" : ""}`}
               >
                 <span>{invisibleLabel(name)} <span className="text-2xs text-muted">{name}</span></span>
                 <span className="font-medium">{g.count}</span>
@@ -240,14 +243,15 @@ export const AnalysisPanel: React.FC<{
       <Card className="p-4">
         {state === "empty" && <p className="text-[13px] text-muted">Écrivez ou collez du texte pour l'analyser.</p>}
         {state === "error" && (
-          <p className="text-[13px] text-accent" role="alert">Analyse indisponible. Nouvel essai à la prochaine modification.</p>
+          <p className="text-[13px] text-accent-text" role="alert">Analyse indisponible. Nouvel essai à la prochaine modification.</p>
         )}
         {result && state !== "empty" && (
           <ScoreGauge
             score={result.totalScore}
             caption={
               <>
-                {result.wordCount} mots · confiance {CONFIDENCE_LABEL[result.confidence] ?? result.confidence}
+                {result.wordCount} mots ·{" "}
+                <span title={CONFIDENCE_HINT}>fiabilité {CONFIDENCE_LABEL[result.confidence] ?? result.confidence}</span>
                 {state === "running" && " · mise à jour…"}
               </>
             }
@@ -289,7 +293,7 @@ export const AnalysisPanel: React.FC<{
                   className={`rounded-card border p-2.5 text-[13px] ${s.status === "alert" ? "border-accent/50 bg-accent/5" : "border-line"}`}
                 >
                   <div className="flex items-center gap-2">
-                    <span aria-label={s.status} className={s.status === "alert" ? "text-accent" : "text-muted"}>
+                    <span aria-label={s.status} className={s.status === "alert" ? "text-accent-text" : "text-muted"}>
                       {STATUS_ICON[s.status]}
                     </span>
                     <span className="font-medium">{s.label}</span>
