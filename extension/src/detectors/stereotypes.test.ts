@@ -63,3 +63,65 @@ describe("StereotypeDetector — word boundaries", () => {
     expect(await found("Cela témoigne d'une grande volonté.")).toEqual(["témoigne d'"]);
   });
 });
+
+describe("StereotypeDetector — catalogue Humanizer", () => {
+  const kinds = async (text: string) => (await detector.detect(text)).map((d) => d.explanation.split(" ")[0]);
+
+  it("detects a contrast split across two sentences", async () => {
+    expect(await found("This does not mean every choice is equal. It means nothing confirms which is right.")).toHaveLength(1);
+    expect(await found("Cela ne veut pas dire que tout se vaut. Cela signifie que rien ne tranche.")).toHaveLength(1);
+  });
+
+  it("detects « not only … but » and its French forms", async () => {
+    expect(await found("The tool is not only fast, but also cheap.")).toHaveLength(1);
+    expect(await found("Il ne s'agit pas de vitesse, mais de confiance.")).toHaveLength(1);
+    expect(await found("C'est non seulement rapide, mais aussi fiable.")).toHaveLength(1);
+  });
+
+  it("detects chatbot residue with the highest confidence and offers removal", async () => {
+    const [d] = await detector.detect("Great question! The Revolution began in 1789. I hope this helps!");
+    expect(d.confidence).toBe(0.9);
+    expect(d.suggestions).toEqual([expect.objectContaining({ type: "remove", text: "" })]);
+    expect(await found("Excellente question. Voici la réponse.")).toHaveLength(1);
+    expect(await found("J'espère que cela vous aide !")).toHaveLength(1);
+  });
+
+  it("detects knowledge-limit disclaimers", async () => {
+    expect(await found("Based on available information, the firm opened in 1990.")).toHaveLength(1);
+    expect(await found("Ces détails ne sont pas publiquement disponibles.")).toHaveLength(1);
+  });
+
+  it("detects staged run-ups, strawmen, sayings and closers", async () => {
+    expect(await found("Let's dive into how caching works.")).toHaveLength(1);
+    expect(await found("Plongeons dans le sujet.")).toHaveLength(1);
+    expect(await found("Don't get me wrong, the plan is fine.")).toHaveLength(1);
+    expect(await found("At its core, the issue is readiness.")).toHaveLength(1);
+    expect(await found("Caching cuts repeat work. That is the real win.")).toHaveLength(1);
+    expect(await found("Tout est dit.")).toHaveLength(1);
+  });
+
+  it("detects inflated significance", async () => {
+    expect(await found("The institute was founded in 1989, marking a pivotal moment for statistics.")).toHaveLength(1);
+    expect(await found("L'avenir s'annonce prometteur.")).toHaveLength(1);
+  });
+
+  it("explains each kind with the catalogue's advice", async () => {
+    const [d] = await detector.detect("Let that sink in.");
+    expect(d.explanation).toMatch(/Coupez-la/);
+    expect(await kinds("Let that sink in.")).toHaveLength(1);
+  });
+
+  it("leaves false friends alone", async () => {
+    expect(await found("Il habite au cœur de la ville, près du marché.")).toEqual([]);
+    expect(await found("I told her, to be clear, that I was not moving.")).toEqual([]);
+    expect(await found("Not only that.")).toEqual([]);
+    expect(await found("She asked a great question about tides.")).toEqual([]);
+    expect(await found("We looked at the real question marks in the data.")).toEqual([]);
+    expect(await found("Cela ne veut pas dire que je pars.")).toEqual([]);
+    expect(await found("Of course I will come. Certainly not today.")).toEqual([]);
+  });
+
+  it("matches a start-of-sentence « To be clear »", async () => {
+    expect(await found("The plan changed. To be clear, we ship on Friday.")).toHaveLength(1);
+  });
+});
