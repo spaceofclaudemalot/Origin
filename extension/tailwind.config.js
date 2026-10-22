@@ -13,7 +13,7 @@ export default {
         rail: tok("rail"),
         ink: tok("ink"),
         muted: tok("muted"),
-        accent: { DEFAULT: tok("accent"), ink: tok("accent-ink") },
+        accent: { DEFAULT: tok("accent"), ink: tok("accent-ink"), text: tok("accent-text") },
         band: { low: tok("band-low"), mid: tok("band-mid"), notable: tok("band-notable") },
         sheet: { DEFAULT: tok("sheet"), ink: tok("sheet-ink") },
       },

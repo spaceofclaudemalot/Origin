@@ -132,7 +132,7 @@ const App: React.FC = () => {
     }
   };
 
-  const confidenceLabel = (c: string) => (c === "high" ? "Haute" : c === "medium" ? "Moyenne" : "Faible");
+  const confidenceLabel = (c: string) => (c === "high" ? "Élevée" : c === "medium" ? "Moyenne" : "Limitée");
 
   return (
     <div className="w-80 min-h-[320px] bg-canvas p-3 font-ui text-ink space-y-3">
@@ -177,11 +177,11 @@ const App: React.FC = () => {
               <span className="font-medium">{result.markerCount}</span>
             </div>
             <div className="flex justify-between">
-              <span>Confiance</span>
+              <span title="Élevée si au moins 3 familles de signaux sont en alerte, moyenne avec 2, limitée sinon ou si le texte est trop court.">Fiabilité du score</span>
               <span className="font-medium">{confidenceLabel(result.confidence)}</span>
             </div>
             {result.invisibles.total > 0 && (
-              <div className={result.invisibles.suspects ? "text-accent" : ""}>
+              <div className={result.invisibles.suspects ? "text-accent-text" : ""}>
                 <div className="flex justify-between">
                   <span>Caractères invisibles</span>
                   <span className="font-medium">

@@ -1,7 +1,7 @@
 /** Jetons de texte et de fond (copie hex de tokens.css), vérifiés par contrast.test.ts. */
 export const TOKENS = {
-  light: { surface: "#e4e1db", raised: "#ebe8e2", ink: "#1d1d1b", muted: "#5f5a52", accent: "#df5830", accentInk: "#ffffff" },
-  dark: { surface: "#232321", raised: "#2c2c2a", ink: "#ece9e3", muted: "#9d988f", accent: "#e8683f", accentInk: "#ffffff" },
+  light: { surface: "#e4e1db", raised: "#ebe8e2", ink: "#1d1d1b", muted: "#5f5a52", accent: "#df5830", accentText: "#a83a18", accentInk: "#ffffff" },
+  dark: { surface: "#232321", raised: "#2c2c2a", ink: "#ece9e3", muted: "#9d988f", accent: "#e8683f", accentText: "#ee7a54", accentInk: "#ffffff" },
 } as const;
 
 const luminance = (hex: string) => {

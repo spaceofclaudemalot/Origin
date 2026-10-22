@@ -14,6 +14,10 @@ describe("contrastes des jetons", () => {
     it(`${theme} : texte secondaire ≥ 4.5 sur surface`, () => {
       expect(contrastRatio(t.muted, t.surface)).toBeGreaterThanOrEqual(4.5);
     });
+    it(`${theme} : texte coloré (accentText) ≥ 4.5 sur surface et raised`, () => {
+      expect(contrastRatio(t.accentText, t.surface)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(t.accentText, t.raised)).toBeGreaterThanOrEqual(4.5);
+    });
     it(`${theme} : texte sur accent ≥ 3 (gras ≥ 13 px)`, () => {
       expect(contrastRatio(t.accentInk, t.accent)).toBeGreaterThanOrEqual(3);
     });

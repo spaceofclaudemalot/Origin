@@ -227,7 +227,7 @@ export const MenuItem: React.FC<{ onSelect: () => void; children: React.ReactNod
     onClick={onSelect}
     className={cx(
       "w-full text-left px-3 py-2 rounded-ctl text-[13px] hover:bg-surface focus:bg-surface outline-none",
-      tone === "accent" ? "text-accent font-medium" : "text-ink",
+      tone === "accent" ? "text-accent-text font-medium" : "text-ink",
     )}
   >
     {children}

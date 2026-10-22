@@ -19,15 +19,18 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
 
+  // Sortie par le même chemin que l'entrée, puis retrait une fois l'animation jouée
+  const dismiss = useCallback((id: number) => {
+    setItems((list) => list.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+    setTimeout(() => setItems((list) => list.filter((t) => t.id !== id)), LEAVE_MS);
+  }, []);
+
   const show = useCallback((message: string, kind: ToastKind = "info") => {
     const id = nextId.current++;
     setItems((list) => [...list, { id, message, kind }]);
-    // Sortie par le même chemin que l'entrée, puis retrait une fois l'animation jouée
-    setTimeout(() => {
-      setItems((list) => list.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
-      setTimeout(() => setItems((list) => list.filter((t) => t.id !== id)), LEAVE_MS);
-    }, VISIBLE_MS);
-  }, []);
+    // Une erreur reste affichée jusqu'à sa fermeture : un message qui disparaît seul peut être manqué
+    if (kind !== "error") setTimeout(() => dismiss(id), VISIBLE_MS);
+  }, [dismiss]);
 
   // Valeur stable : les effets qui dépendent de useToast() ne se relancent pas
   const api = useMemo(() => ({ show }), [show]);
@@ -39,12 +42,20 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         {items.map((t) => (
           <div
             key={t.id}
-            role="status"
+            role={t.kind === "error" ? "alert" : "status"}
             className={`${KIND_CLASS[t.kind]} ${
               t.leaving ? "animate-rise-out" : "animate-rise-in"
-            } motion-reduce:animate-fade-in font-ui border text-[13px] px-4 py-2.5 rounded-card shadow-lift`}
+            } motion-reduce:animate-fade-in font-ui border text-[13px] pl-4 pr-2 py-2 rounded-card shadow-lift flex items-center gap-3`}
           >
-            {t.message}
+            <span>{t.message}</span>
+            <button
+              type="button"
+              aria-label="Fermer la notification"
+              onClick={() => dismiss(t.id)}
+              className="h-6 w-6 shrink-0 rounded-ctl inline-flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity duration-150"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
           </div>
         ))}
       </div>
