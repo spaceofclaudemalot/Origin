@@ -53,6 +53,10 @@ Le serveur de dev ne fournit pas les API `chrome.*` : seul l'éditeur y fonction
 - `cahier_des_charges.md` : cahier des charges d'origine.
 - `docs/superpowers/` : specs et plans de conception.
 
+## Retours et bugs
+
+Le bouton en forme d'enveloppe, en bas du rail de l'éditeur, ouvre votre client mail avec un modèle prérempli vers claude.malot@creativeori.com. Le message contient la version de l'extension et le navigateur, jamais le texte analysé.
+
 ## Licence
 
 Aucune licence n'est déclarée pour l'instant.
