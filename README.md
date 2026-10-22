@@ -43,7 +43,6 @@ Run these from the `extension/` folder:
 npm run dev        # Vite server, editor at http://localhost:5173/src/editor/index.html
 npm test           # unit tests (Vitest)
 npm run test:perf  # performance tests
-npm run lint
 ```
 
 The dev server does not provide the `chrome.*` APIs, so only the editor works there, not the popup. GitHub Actions runs the tests and the build on every pull request.

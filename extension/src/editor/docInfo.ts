@@ -1,6 +1,7 @@
 import type { JSONContent } from "@tiptap/core";
 import { locale, t } from "../i18n/core";
 import { DEFAULT_TITLE } from "../storage/documents";
+import { countWordsIn } from "../analysis/segment";
 
 /**
  * Titre affiché : le titre par défaut est enregistré en français (« Sans titre »), on l'affiche
@@ -21,7 +22,8 @@ export function wordCountOf(content: JSONContent | null | undefined): number {
   if (!content) return 0;
   const parts: string[] = [];
   collect(content, parts);
-  return parts.join("").match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu)?.length ?? 0;
+  // Même règle que le panneau d'analyse (mots du moteur), pour que les deux nombres concordent
+  return countWordsIn(parts.join(""));
 }
 
 const day = (t: number) => {

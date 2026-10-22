@@ -9,7 +9,7 @@
 - [ ] Les détails de l'extension ne demandent plus l'accès à tous les sites.
 
 ## B. Popup
-- [ ] Sélection + « Analyze » → score, nombre de marqueurs, confiance.
+- [ ] Sélection + « Analyser la sélection » → score, nombre de marqueurs, confiance.
 - [ ] Sélection + « Ouvrir dans l'éditeur » → nouvel onglet avec le texte (paragraphes conservés).
 - [ ] Sans sélection → document vide.
 - [ ] Sur chrome://extensions → document vide, aucune erreur.
