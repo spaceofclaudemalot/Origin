@@ -1,6 +1,7 @@
 import type { Detection, Detector, GlobalDetector, GlobalSignal, SignalFamily } from "../types/types";
 import { countWordsIn, type Segmented } from "../analysis/segment";
-import { formatFr, ramp, wordBoundary } from "../analysis/stats";
+import { formatNum, ramp, wordBoundary } from "../analysis/stats";
+import { t } from "../i18n/core";
 import { CONNECTOR_ALERT_RATIO, CONNECTOR_BASELINE, CONNECTOR_MAX_RATIO, MIN_WORDS_DENSITY } from "../analysis/thresholds";
 
 /** Connecteurs de transition surreprésentés (1,8 à 4× la fréquence humaine). */
@@ -86,11 +87,11 @@ export class ConnectorDetector implements Detector, GlobalDetector {
       end: c.end,
       score,
       confidence: 0.7,
-      explanation: `« ${c.text} » est un connecteur de transition surutilisé par les LLM (1,8 à 4 fois plus que dans un texte humain).`,
+      explanation: t("conn.why", { text: c.text }),
       suggestions: (CONNECTORS[c.text.toLowerCase().replace(/\s+/g, " ")] ?? []).map((rep) => ({
         type: "replace",
         text: rep,
-        reason: `Remplacer « ${c.text} » par « ${rep} », ou reformuler sans connecteur.`,
+        reason: t("conn.reason", { text: c.text, rep }),
       })),
     }));
   }
@@ -105,12 +106,12 @@ export class ConnectorDetector implements Detector, GlobalDetector {
       {
         id: "connector-density",
         family: "connectors",
-        label: "Densité de connecteurs",
+        label: t("conn.signal.label"),
         value: ratio,
-        display: `×${formatFr(ratio, 1)} la norme humaine (seuil ×${formatFr(CONNECTOR_ALERT_RATIO, 1)})`,
+        display: t("conn.signal.display", { ratio: formatNum(ratio, 1), threshold: formatNum(CONNECTOR_ALERT_RATIO, 1) }),
         score: insufficient ? 0 : score,
         status: insufficient ? "insufficient" : ratio >= CONNECTOR_ALERT_RATIO ? "alert" : "ok",
-        explanation: "Les LLM enchaînent les connecteurs (furthermore, en outre…) bien plus souvent qu'un auteur humain.",
+        explanation: t("conn.signal.why"),
         ranges,
       },
     ];

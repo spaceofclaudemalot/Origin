@@ -5,6 +5,7 @@ import { create } from "../storage/documents";
 import { Button, Card } from "../ui/primitives";
 import { ScoreGauge } from "../ui/ScoreGauge";
 import { ILogo } from "../ui/icons";
+import { initLang, t, tn, useLang, type Key } from "../i18n";
 import "./global.css";
 
 /**
@@ -14,6 +15,7 @@ import "./global.css";
 const STORAGE_KEY = "textorigin:selection";
 
 const App: React.FC = () => {
+  useLang();
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,15 +43,15 @@ const App: React.FC = () => {
               reject(new Error(chrome.runtime.lastError.message));
             else if (response?.type === "ANALYSIS_READY") resolve(response.result);
             else if (response?.type === "ANALYSIS_ERROR")
-              reject(new Error(response.error || "Analyse échouée."));
-            else reject(new Error("Réponse invalide du service d'analyse."));
+              reject(new Error(response.error || t("popup.err.analysisFailed")));
+            else reject(new Error(t("popup.err.badResponse")));
           },
         );
       });
       setResult(res);
       chrome.storage.session.set({ [STORAGE_KEY]: text });
     } catch (e) {
-      const msg = (e as Error).message || "Erreur inconnue.";
+      const msg = (e as Error).message || t("popup.err.unknown");
       setError(msg);
       console.error("[TextOrigin] analyse error:", msg);
     } finally {
@@ -63,7 +65,7 @@ const App: React.FC = () => {
    */
   const getPageSelection = async (): Promise<string> => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id == null) throw new Error("Impossible d'accéder à l'onglet actif.");
+    if (tab?.id == null) throw new Error(t("popup.err.noTab"));
     try {
       const injections = await chrome.scripting.executeScript({
         target: { tabId: tab.id, allFrames: true },
@@ -85,7 +87,7 @@ const App: React.FC = () => {
       return (found?.result as string) ?? "";
     } catch (e) {
       console.warn("[TextOrigin] injection impossible:", e);
-      throw new Error("Cette page ne peut pas être analysée (page protégée du navigateur).");
+      throw new Error(t("popup.err.protectedPage"));
     }
   };
 
@@ -102,7 +104,7 @@ const App: React.FC = () => {
     }
 
     if (!text) {
-      setError("Veuillez sélectionner du texte sur la page.");
+      setError(t("popup.err.noSelection"));
       return;
     }
 
@@ -127,12 +129,12 @@ const App: React.FC = () => {
       await chrome.tabs.create({ url: chrome.runtime.getURL(`src/editor/index.html?doc=${doc.id}`) });
       window.close();
     } catch (e) {
-      setError(`Impossible d'ouvrir l'éditeur : ${(e as Error).message}`);
+      setError(t("popup.err.openEditor", { message: (e as Error).message }));
       setOpening(false);
     }
   };
 
-  const confidenceLabel = (c: string) => (c === "high" ? "Élevée" : c === "medium" ? "Moyenne" : "Limitée");
+  const confidenceLabel = (c: string) => t(`popup.reliability.${c}` as Key);
 
   return (
     <div className="w-80 min-h-[320px] bg-canvas p-3 font-ui text-ink space-y-3">
@@ -142,23 +144,23 @@ const App: React.FC = () => {
       </header>
 
       <Card className="p-3 space-y-2">
-        <Button onClick={handleAnalyze} disabled={loading} aria-label="Analyser le texte sélectionné" className="w-full">
-          {loading ? "Analyse en cours…" : "Analyser la sélection"}
+        <Button onClick={handleAnalyze} disabled={loading} aria-label={t("popup.analyzeLabel")} className="w-full">
+          {loading ? t("popup.analyzing") : t("popup.analyze")}
         </Button>
         <Button
           variant="secondary"
           onClick={handleOpenEditor}
           disabled={opening}
-          aria-label="Ouvrir la sélection dans l'éditeur"
+          aria-label={t("popup.openLabel")}
           className="w-full"
         >
-          {opening ? "Ouverture…" : "Ouvrir dans l'éditeur"}
+          {opening ? t("popup.opening") : t("popup.openEditor")}
         </Button>
       </Card>
 
       {loading && (
         <p className="text-2xs text-muted px-1" role="status">
-          Analyse en cours…
+          {t("popup.analyzing")}
         </p>
       )}
 
@@ -173,31 +175,30 @@ const App: React.FC = () => {
           <ScoreGauge score={result.totalScore} size="md" />
           <div className="space-y-1.5 text-[13px]">
             <div className="flex justify-between">
-              <span>Marqueurs détectés</span>
+              <span>{t("popup.markers")}</span>
               <span className="font-medium">{result.markerCount}</span>
             </div>
             <div className="flex justify-between">
-              <span title="Élevée si au moins 3 familles de signaux sont en alerte, moyenne avec 2, limitée sinon ou si le texte est trop court.">Fiabilité du score</span>
+              <span title={t("popup.reliability.hint")}>{t("popup.reliability")}</span>
               <span className="font-medium">{confidenceLabel(result.confidence)}</span>
             </div>
             {result.invisibles.total > 0 && (
               <div className={result.invisibles.suspects ? "text-accent-text" : ""}>
                 <div className="flex justify-between">
-                  <span>Caractères invisibles</span>
+                  <span>{t("popup.invisibles")}</span>
                   <span className="font-medium">
                     {result.invisibles.total}
-                    {result.invisibles.suspects > 0 &&
-                      ` (dont ${result.invisibles.suspects} suspect${result.invisibles.suspects > 1 ? "s" : ""})`}
+                    {result.invisibles.suspects > 0 && tn("popup.suspects", result.invisibles.suspects)}
                   </span>
                 </div>
                 {result.invisibles.suspects > 0 && (
-                  <p className="text-2xs mt-1">Texte caché ou manipulé : ouvrez la sélection dans l'éditeur pour le voir.</p>
+                  <p className="text-2xs mt-1">{t("popup.hiddenWarning")}</p>
                 )}
               </div>
             )}
           </div>
           <p className="text-2xs text-muted">
-            Score de présence de marqueurs stylistiques fréquemment observés dans des textes générés par des LLM.
+            {t("popup.disclaimer")}
           </p>
         </Card>
       )}
@@ -205,5 +206,6 @@ const App: React.FC = () => {
   );
 };
 
+initLang();
 createRoot(document.getElementById("root")!).render(<App />);
 export {};

@@ -1,11 +1,13 @@
-export const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"] as const;
+import { t } from "../i18n/core";
+
+export const ACCEPTED_IMAGE_TYPES =["image/png", "image/jpeg", "image/gif", "image/webp"] as const;
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 export function validateImage(file: { type: string; size: number }): string | null {
   if (!(ACCEPTED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
-    return "Format d'image non pris en charge (png, jpeg, gif ou webp).";
+    return t("image.unsupported");
   }
-  if (file.size > MAX_IMAGE_BYTES) return "Image trop lourde (10 Mo maximum).";
+  if (file.size > MAX_IMAGE_BYTES) return t("image.tooLarge");
   return null;
 }
 

@@ -1,6 +1,8 @@
+import { t } from "../i18n/core";
+
 export type ScoreBand = "low" | "mid" | "notable" | "high";
 
-export const BAND_LABEL: Record<ScoreBand, string> = { low: "Faible", mid: "Modéré", notable: "Notable", high: "Élevé" };
+export const bandLabel = (band: ScoreBand): string => t(`band.${band}`);
 
 /** Bandes du score global (mêmes seuils que l'ancien code couleur : 21 / 41 / 61). */
 export const scoreBand = (score: number): ScoreBand =>

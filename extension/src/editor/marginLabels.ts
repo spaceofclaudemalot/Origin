@@ -2,6 +2,7 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import type { AnalysisResult, GlobalSignal } from "../types/types";
 import { mapRange, type TextIndex } from "../analysis/positions";
 import { markerLevel, type MarkerLevel } from "./extensions/AiMarkers";
+import { t } from "../i18n/core";
 
 /** Ce qu'un bloc textuel (paragraphe, titre, élément de liste, cellule) contient. */
 export interface BlockAnnotation {
@@ -15,12 +16,7 @@ export interface BlockAnnotation {
   signalRanges: Array<{ from: number; to: number }>;
 }
 
-export const SIGNAL_SHORT: Record<GlobalSignal["id"], string> = {
-  "connector-density": "CONNECTEURS",
-  rhythm: "RYTHME",
-  "paragraph-uniformity": "PARAGRAPHES",
-  "topic-sentences": "PHRASES D'ATTAQUE",
-};
+export const signalShort = (id: GlobalSignal["id"]): string => t(`margin.signal.${id}`);
 
 const RANK: Record<MarkerLevel, number> = { low: 0, medium: 1, high: 2 };
 

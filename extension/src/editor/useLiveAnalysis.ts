@@ -6,6 +6,7 @@ import { analysisDelay, createLatestOnly } from "../analysis/live";
 import { createDetectorService } from "../analysis/service";
 import { setMarkers } from "./extensions/AiMarkers";
 import { setInvisibleMarks, type InvisibleMark } from "./extensions/InvisibleMarks";
+import { useLang } from "../i18n";
 
 export type AnalysisState = "empty" | "running" | "ready" | "error";
 
@@ -17,6 +18,8 @@ const service = createDetectorService();
  * récente est ignorée.
  */
 export function useLiveAnalysis(editor: Editor | null) {
+  // Les explications sont rédigées à l'analyse : un changement de langue relance l'analyse
+  const lang = useLang();
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [state, setState] = useState<AnalysisState>("empty");
   const [sourceText, setSourceText] = useState("");
@@ -71,7 +74,7 @@ export function useLiveAnalysis(editor: Editor | null) {
       latest.cancel();
       editor.off("update", onUpdate);
     };
-  }, [editor]);
+  }, [editor, lang]);
 
   return { result, state, sourceText };
 }

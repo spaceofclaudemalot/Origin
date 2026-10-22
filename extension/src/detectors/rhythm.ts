@@ -1,6 +1,7 @@
 import type { Detection, Detector, GlobalDetector, GlobalSignal, SignalFamily } from "../types/types";
 import type { Segmented } from "../analysis/segment";
-import { formatFr, mean, ramp, std } from "../analysis/stats";
+import { formatNum, mean, ramp, std } from "../analysis/stats";
+import { t } from "../i18n/core";
 import { ALERT_SCORE, MIN_WORDS_DENSITY, RHYTHM_AI, RHYTHM_BAND, RHYTHM_HUMAN, RHYTHM_MIN_SENTENCES } from "../analysis/thresholds";
 
 /** Variabilité du rythme (burstiness) : B = (σ − μ) / (σ + μ) sur la longueur des phrases. */
@@ -26,12 +27,12 @@ export class RhythmDetector implements Detector, GlobalDetector {
       {
         id: "rhythm",
         family: "regularity",
-        label: "Rythme des phrases",
+        label: t("rhythm.label"),
         value: b,
-        display: `B = ${formatFr(b)} (seuil ${formatFr(RHYTHM_HUMAN)})`,
+        display: t("rhythm.display", { b: formatNum(b), threshold: formatNum(RHYTHM_HUMAN) }),
         score,
         status: insufficient ? "insufficient" : score >= ALERT_SCORE ? "alert" : "ok",
-        explanation: "Un humain alterne phrases courtes et longues ; un LLM garde une cadence régulière (B très négatif).",
+        explanation: t("rhythm.why"),
         ranges: sentences
           .filter((s) => Math.abs(s.wordCount - mu) <= RHYTHM_BAND * mu)
           .map(({ start, end }) => ({ start, end })),

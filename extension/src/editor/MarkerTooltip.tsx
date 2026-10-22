@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { AnalysisResult, Detection } from "../types/types";
-import { CATEGORY_LABEL } from "./AnalysisPanel";
+import { categoryLabel } from "./AnalysisPanel";
+import { t, useLang } from "../i18n";
 import { matchCase } from "../analysis/live";
 
 interface Hover { detection: Detection; x: number; y: number }
@@ -10,6 +11,7 @@ interface Hover { detection: Detection; x: number; y: number }
 export const MarkerTooltip: React.FC<{ editor: Editor | null; result: AnalysisResult | null; sourceText: string }> = ({
   editor, result, sourceText,
 }) => {
+  useLang();
   const [hover, setHover] = useState<Hover | null>(null);
 
   useEffect(() => {
@@ -41,10 +43,12 @@ export const MarkerTooltip: React.FC<{ editor: Editor | null; result: AnalysisRe
       className="no-print fixed z-40 animate-fade-in max-w-xs bg-[#fbfaf7] text-[#1d1d1b] border border-[#d6d2ca] text-2xs font-ui rounded-card shadow-lift p-3 pointer-events-none"
       style={{ left: Math.min(hover.x, window.innerWidth - 330), top: hover.y }}
     >
-      <div className="text-[#b8411d] font-semibold mb-1">{CATEGORY_LABEL[d.category]} · score {d.score}</div>
+      <div className="text-[#b8411d] font-semibold mb-1">{t("tooltip.score", { category: categoryLabel(d.category), score: d.score })}</div>
       <p className="mb-2">{d.explanation}</p>
       {d.suggestions.length > 0 && (
-        <p className="text-[#6b665e]">Suggestions : {d.suggestions.map((s) => matchCase(original, s.text) || "supprimer").join(", ")}</p>
+        <p className="text-[#6b665e]">
+          {t("tooltip.suggestions", { list: d.suggestions.map((s) => matchCase(original, s.text) || t("tooltip.remove")).join(", ") })}
+        </p>
       )}
     </div>
   );

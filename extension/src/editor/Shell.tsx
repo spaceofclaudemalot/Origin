@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BP, layoutFor, readPrefs, writePrefs, type Layout, type LayoutPrefs } from "./layout";
 import { IAnalysis, IDocs, ILogo, IMail, IPlus } from "../ui/icons";
 import { extensionContext, feedbackUrl } from "../ui/feedback";
+import { LangSwitch } from "../ui/LangSwitch";
+import { t, useLang } from "../i18n";
 
 /** Disposition courante, tiroirs ouverts et bascules du rail. */
 export function useLayout() {
@@ -100,6 +102,7 @@ export const Shell: React.FC<{
   analysis: React.ReactNode;
   children: React.ReactNode;
 }> = ({ layout, docsOpen, analysisOpen, onToggleDocs, onToggleAnalysis, onNewDoc, onCloseDrawers, docs, analysis, children }) => {
+  useLang();
   const docsBtn = useRef<HTMLButtonElement>(null);
   const analysisBtn = useRef<HTMLButtonElement>(null);
   const anyDrawer = docsOpen || analysisOpen;
@@ -120,33 +123,34 @@ export const Shell: React.FC<{
 
   return (
     <div className="to-shell h-screen flex gap-2 p-2 bg-canvas font-ui text-ink">
-      <nav className="no-print w-14 shrink-0 bg-rail rounded-shell shadow-lift flex flex-col items-center py-3 gap-2" aria-label="Navigation">
+      <nav className="no-print w-14 shrink-0 bg-rail rounded-shell shadow-lift flex flex-col items-center py-3 gap-2" aria-label={t("nav.label")}>
         <div className="w-10 h-10 inline-flex items-center justify-center text-accent" title="TextOrigin">
           <ILogo className="w-6 h-6" />
         </div>
         <span className="w-6 h-px bg-white/15 my-1" aria-hidden="true" />
-        <RailButton buttonRef={docsBtn} label="Documents" active={layout.docs === "pinned" || docsOpen} onClick={onToggleDocs}>
+        <RailButton buttonRef={docsBtn} label={t("nav.docs")} active={layout.docs === "pinned" || docsOpen} onClick={onToggleDocs}>
           <IDocs />
         </RailButton>
-        <RailButton buttonRef={analysisBtn} label="Analyse" active={layout.analysis === "column" || analysisOpen} onClick={onToggleAnalysis}>
+        <RailButton buttonRef={analysisBtn} label={t("nav.analysis")} active={layout.analysis === "column" || analysisOpen} onClick={onToggleAnalysis}>
           <IAnalysis />
         </RailButton>
-        <RailButton label="Nouveau document" onClick={onNewDoc}>
+        <RailButton label={t("nav.newDoc")} onClick={onNewDoc}>
           <IPlus />
         </RailButton>
-        {/* En bas du rail : ouvre le client mail avec un modèle (retour ou bug), sans joindre le texte analysé */}
+        {/* En bas du rail : bascule de langue, puis le retour par mail (modèle de retour ou de bug, sans le texte analysé) */}
+        <LangSwitch />
         <a
           href={feedbackUrl(extensionContext())}
-          title="Envoyer un retour ou signaler un bug"
-          aria-label="Envoyer un retour ou signaler un bug"
-          className="mt-auto w-10 h-10 rounded-card inline-flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-[color,background-color,transform] duration-150 ease-ui motion-safe:active:scale-[0.97]"
+          title={t("feedback.title")}
+          aria-label={t("feedback.title")}
+          className="w-10 h-10 rounded-card inline-flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-[color,background-color,transform] duration-150 ease-ui motion-safe:active:scale-[0.97]"
         >
           <IMail />
         </a>
       </nav>
 
       {layout.docs === "pinned" && (
-        <aside className="no-print w-[260px] shrink-0 bg-surface rounded-shell overflow-auto" aria-label="Documents">
+        <aside className="no-print w-[260px] shrink-0 bg-surface rounded-shell overflow-auto" aria-label={t("nav.docs")}>
           {docs}
         </aside>
       )}
@@ -154,13 +158,13 @@ export const Shell: React.FC<{
       <div className="to-docarea flex-1 min-w-0 bg-surface rounded-shell flex flex-col overflow-hidden">{children}</div>
 
       {layout.analysis === "column" && (
-        <aside className="no-print w-80 shrink-0 bg-surface rounded-shell overflow-auto" aria-label="Analyse">
+        <aside className="no-print w-80 shrink-0 bg-surface rounded-shell overflow-auto" aria-label={t("nav.analysis")}>
           {analysis}
         </aside>
       )}
 
-      {docsOpen && layout.docs === "drawer" && <Drawer side="left" label="Documents" onClose={close}>{docs}</Drawer>}
-      {analysisOpen && layout.analysis === "drawer" && <Drawer side="right" label="Analyse" onClose={close}>{analysis}</Drawer>}
+      {docsOpen && layout.docs === "drawer" && <Drawer side="left" label={t("nav.docs")} onClose={close}>{docs}</Drawer>}
+      {analysisOpen && layout.analysis === "drawer" && <Drawer side="right" label={t("nav.analysis")} onClose={close}>{analysis}</Drawer>}
     </div>
   );
 };

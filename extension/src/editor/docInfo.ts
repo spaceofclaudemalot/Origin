@@ -1,4 +1,13 @@
 import type { JSONContent } from "@tiptap/core";
+import { locale, t } from "../i18n/core";
+import { DEFAULT_TITLE } from "../storage/documents";
+
+/**
+ * Titre affiché : le titre par défaut est enregistré en français (« Sans titre »), on l'affiche
+ * dans la langue courante. Un titre choisi par l'utilisateur est affiché tel quel.
+ */
+export const displayTitle = (title: string): string =>
+  !title.trim() || title === DEFAULT_TITLE ? t("editor.untitled") : title;
 
 function collect(node: JSONContent, out: string[]): void {
   if (node.type === "text" && node.text) out.push(node.text);
@@ -20,13 +29,14 @@ const day = (t: number) => {
   d.setHours(0, 0, 0, 0);
   return d.getTime();
 };
-const dateFmt = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+const dateFmt = (ts: number) =>
+  new Intl.DateTimeFormat(locale(), { day: "2-digit", month: "2-digit", year: "numeric" }).format(ts);
 
 export function relativeDate(ts: number, now = Date.now()): string {
   const diff = now - ts;
-  if (diff < 60_000) return "à l'instant";
-  if (diff < 3_600_000) return `il y a ${Math.floor(diff / 60_000)} min`;
-  if (day(ts) === day(now)) return `il y a ${Math.floor(diff / 3_600_000)} h`;
-  if (day(ts) === day(now - 86_400_000)) return "hier";
-  return dateFmt.format(ts);
+  if (diff < 60_000) return t("date.now");
+  if (diff < 3_600_000) return t("date.minutes", { count: Math.floor(diff / 60_000) });
+  if (day(ts) === day(now)) return t("date.hours", { count: Math.floor(diff / 3_600_000) });
+  if (day(ts) === day(now - 86_400_000)) return t("date.yesterday");
+  return dateFmt(ts);
 }

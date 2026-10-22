@@ -198,21 +198,7 @@ export const HUMANIZER_PATTERNS: HumanizerPattern[] = [
   },
 ];
 
-/** Explication affichée, avec le conseil de réécriture du catalogue. */
-export const HUMANIZER_EXPLANATION: Record<HumanizerKind, string> = {
-  "split-contrast":
-    "Contraste « pas X mais Y » : la partie négative nomme une idée que personne n'a avancée et ne fait que donner du poids à la suite. Énoncez directement l'idée positive.",
-  inflated:
-    "Signification gonflée : un fait ordinaire est présenté comme un tournant ou une promesse d'avenir. Gardez le fait, retirez l'emphase.",
-  residue:
-    "Résidu de conversation avec un assistant (formule d'accueil, de politesse ou de clôture), l'un des signes les plus sûrs. Retirez l'enveloppe et gardez le contenu.",
-  disclaimer:
-    "Formule sur les limites des sources ou des connaissances, typique d'un assistant. Dites ce que la source ne montre pas, ou supprimez la phrase.",
-  runup: "Préambule qui annonce le propos au lieu de le tenir. Supprimez l'amorce et commencez par l'information.",
-  straw: "Réponse à une objection que le texte n'a pas formulée. Supprimez la défense, ou formulez l'affirmation qu'elle contient.",
-  saying: "Formule qui sonne profond sans rien préciser. Remplacez-la par l'affirmation concrète.",
-  closer: "Phrase de clôture qui répète ce qui vient d'être dit. Coupez-la, sauf si elle apporte un fait ou une conséquence nouvelle.",
-};
+// Les explications (avec le conseil de réécriture du catalogue) sont dans i18n : clés « hp.<kind> ».
 
 /** Motifs dont la suppression laisse un texte correct : une suggestion « Supprimer » est proposée. */
 export const HUMANIZER_REMOVABLE: ReadonlySet<HumanizerKind> = new Set(["residue", "runup", "closer"]);

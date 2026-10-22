@@ -1,3 +1,5 @@
+import { t } from "../i18n/core";
+
 export const FEEDBACK_EMAIL = "claude.malot@creativeori.com";
 
 interface FeedbackContext {
@@ -17,26 +19,16 @@ export function extensionContext(): FeedbackContext {
 }
 
 /**
- * Lien mailto prérempli. Le texte analysé n'est jamais joint : seules la version et le
- * navigateur le sont, pour aider à reproduire un bug.
+ * Lien mailto prérempli, dans la langue de l'interface. Le texte analysé n'est jamais joint :
+ * seules la version et le navigateur le sont, pour aider à reproduire un bug.
  */
 export function feedbackUrl(ctx: FeedbackContext): string {
-  const body = [
-    "Type : Retour ou Bug (gardez l'un des deux)",
-    "",
-    "Décrivez votre retour, ou ce que vous attendiez et ce qui s'est passé :",
-    "",
-    "",
-    "Pour un bug, les étapes pour le reproduire :",
-    "1.",
-    "",
-    "---",
-    `Version : ${ctx.version ?? "inconnue"}`,
-    `Navigateur : ${ctx.userAgent ?? "inconnu"}`,
-    "Le texte analysé n'est pas joint à ce message ; ajoutez un extrait si c'est utile.",
-  ].join("\r\n");
+  const body = t("feedback.body", {
+    version: ctx.version ?? t("feedback.unknownVersion"),
+    browser: ctx.userAgent ?? t("feedback.unknownBrowser"),
+  }).replace(/\n/g, "\r\n");
   const query = [
-    ["subject", "[TextOrigin AI] Retour ou bug"],
+    ["subject", t("feedback.subject")],
     ["body", body],
   ]
     .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)

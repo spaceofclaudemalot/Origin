@@ -6,7 +6,7 @@ A Chrome extension (Manifest V3) that spots the stylistic markers often associat
 
 Everything runs locally: no network calls, no LLM.
 
-It analyzes **English and French** text. The interface itself is in French for now, and so are the design docs under `docs/`.
+It analyzes **English and French** text. The interface comes in both languages too: it follows your browser language by default, and the **FR / EN** button at the bottom of the editor's side rail switches it (the choice is remembered, and the popup follows). Explanations of each marker are written in the interface language. The design docs under `docs/` are in French.
 
 ## What it detects
 
@@ -53,13 +53,14 @@ The dev server does not provide the `chrome.*` APIs, so only the editor works th
 - `extension/src/detectors/`: one detector per family (`lexical`, `connectors`, `stereotypes`, `rhythm`, `paragraphs`, `invisibles`) and their data.
 - `extension/src/analysis/`: scoring, thresholds, segmentation, live analysis.
 - `extension/src/editor/`, `extension/src/popup/`: user interfaces.
+- `extension/src/i18n/`: the French and English dictionaries (`fr.ts`, `en.ts`) and the language helpers. Add a string to `fr.ts`, and TypeScript requires its English version in `en.ts`.
 - `extension/src/background/`: service worker.
 - `cahier_des_charges.md`: the original product brief (in French).
 - `docs/superpowers/`: design specs and plans (in French).
 
 ## Feedback and bugs
 
-The envelope button at the bottom of the editor's side rail opens your mail client with a pre-filled template addressed to claude.malot@creativeori.com. The message includes the extension version and your browser, never the analyzed text.
+The envelope button at the very bottom of the editor's side rail, under the language switch, opens your mail client with a pre-filled template addressed to claude.malot@creativeori.com. The message includes the extension version and your browser, never the analyzed text.
 
 ## License
 

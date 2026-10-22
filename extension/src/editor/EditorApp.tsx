@@ -8,6 +8,7 @@ import { InvisibleMarks } from "./extensions/InvisibleMarks";
 import { StoredImageWithView, insertImageFiles } from "./StoredImageView";
 import { useAutosave, type SaveStatus } from "./useAutosave";
 import { useToast } from "./Toast";
+import { displayTitle } from "./docInfo";
 import { Toolbar } from "./Toolbar";
 import { DocumentList } from "./DocumentList";
 import { ExportMenu } from "./ExportMenu";
@@ -20,23 +21,21 @@ import { create, get, list, type StoredDocument } from "../storage/documents";
 import { Shell, useLayout } from "./Shell";
 import { Chip, Menu, MenuItem } from "../ui/primitives";
 import { IMore } from "../ui/icons";
+import { t, useLang } from "../i18n";
 import { pruneBackups, withBackup } from "../storage/backup";
 
 export function editorExtensions(): Extensions {
   return [...baseExtensions({ storedImage: StoredImageWithView }), AiMarkers, SignalHighlights, InvisibleMarks];
 }
 
-const STATUS_LABEL: Record<SaveStatus, string> = {
-  saved: "Enregistré",
-  saving: "Enregistrement…",
-  error: "Non enregistré · Réessayer",
-};
+const STATUS_KEY = { saved: "editor.saved", saving: "editor.saving", error: "editor.saveError" } as const satisfies Record<SaveStatus, string>;
 
 function imageFiles(list: FileList | null | undefined): File[] {
   return Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
 }
 
 export const EditorApp: React.FC = () => {
+  const lang = useLang();
   const toast = useToast();
   const { status, schedule, flush, track } = useAutosave();
   const [current, setCurrent] = useState<StoredDocument | null>(null);
@@ -54,7 +53,7 @@ export const EditorApp: React.FC = () => {
       setCurrent(doc);
       setTitle(doc.title);
       history.replaceState(null, "", `?doc=${doc.id}`);
-      document.title = `${doc.title} — TextOrigin`;
+      document.title = `${displayTitle(doc.title)} — TextOrigin`;
     },
     [flush, track, schedule],
   );
@@ -70,7 +69,7 @@ export const EditorApp: React.FC = () => {
         if (currentId.current) schedule(currentId.current, { content: editor.getJSON() });
       },
       editorProps: {
-        attributes: { spellcheck: "true", "aria-label": "Document" },
+        attributes: { spellcheck: "true", "aria-label": t("editor.docLabel") },
         handlePaste: (view, event) => {
           const files = imageFiles(event.clipboardData?.files);
           if (!files.length) return false;
@@ -97,14 +96,14 @@ export const EditorApp: React.FC = () => {
     (async () => {
       const wanted = new URLSearchParams(location.search).get("doc");
       let doc = wanted ? await get(wanted) : undefined;
-      if (wanted && !doc) toast.show("Document introuvable", "warning");
+      if (wanted && !doc) toast.show(t("editor.notFound"), "warning");
       const all = await list();
       pruneBackups(all.map((d) => d.id));
       doc ??= all[0] ?? (await create());
       await open(doc);
     })().catch((e) => {
       console.error("[TextOrigin] stockage indisponible:", e);
-      toast.show("Stockage local indisponible : vos modifications ne seront pas enregistrées.", "error");
+      toast.show(t("editor.storageDown"), "error");
     });
   }, [open, toast]);
 
@@ -136,7 +135,7 @@ export const EditorApp: React.FC = () => {
       openDoc(await create());
     } catch (e) {
       console.error("[TextOrigin] nouveau document:", e);
-      toast.show("Impossible de créer le document.", "error");
+      toast.show(t("editor.createFailed"), "error");
     }
   }, [openDoc, toast]);
 
@@ -144,8 +143,13 @@ export const EditorApp: React.FC = () => {
     setTitle(value);
     if (!currentId.current) return;
     schedule(currentId.current, { title: value });
-    document.title = `${value.trim() || "Sans titre"} — TextOrigin`;
+    document.title = `${displayTitle(value)} — TextOrigin`;
   };
+
+  // L'onglet suit la langue quand le titre est le titre par défaut (« Sans titre » / « Untitled »)
+  useEffect(() => {
+    document.title = `${displayTitle(title)} — TextOrigin`;
+  }, [title, lang]);
 
   const docs = (
     <DocumentList
@@ -183,35 +187,35 @@ export const EditorApp: React.FC = () => {
       }
     >
       <header className="no-print px-6 pt-4 pb-3 space-y-1">
-        <div className="text-2xs text-muted">Documents <span aria-hidden="true">›</span> {title.trim() || "Sans titre"}</div>
+        <div className="text-2xs text-muted">{t("nav.docs")} <span aria-hidden="true">›</span> {displayTitle(title)}</div>
         <div className="flex items-center gap-2">
           <input
             ref={titleInput}
-            value={title}
+            value={displayTitle(title)}
             onChange={(e) => rename(e.target.value)}
-            aria-label="Titre du document"
+            aria-label={t("editor.titleLabel")}
             className="text-xl font-semibold bg-transparent rounded-ctl px-2 -mx-2 py-0.5 hover:bg-raised focus:bg-raised outline-none min-w-0 flex-1 max-w-xl"
           />
           <Menu
-            ariaLabel="Actions du document"
+            ariaLabel={t("editor.actions")}
             align="left"
             buttonClassName="h-8 w-8 rounded-ctl inline-flex items-center justify-center text-muted hover:text-ink hover:bg-raised"
             label={<IMore />}
           >
             {(close) => (
               <>
-                <MenuItem onSelect={() => { close(); titleInput.current?.focus(); titleInput.current?.select(); }}>Renommer</MenuItem>
-                <MenuItem tone="accent" onSelect={() => { close(); setDeleteRequested(true); shell.openDocs(); }}>Supprimer</MenuItem>
+                <MenuItem onSelect={() => { close(); titleInput.current?.focus(); titleInput.current?.select(); }}>{t("editor.rename")}</MenuItem>
+                <MenuItem tone="accent" onSelect={() => { close(); setDeleteRequested(true); shell.openDocs(); }}>{t("editor.delete")}</MenuItem>
               </>
             )}
           </Menu>
           <div className="flex-1" />
           {status === "error" ? (
-            <Chip as="button" tone="accent" onClick={() => void flush()} role="status">{STATUS_LABEL.error}</Chip>
+            <Chip as="button" tone="accent" onClick={() => void flush()} role="status">{t(STATUS_KEY.error)}</Chip>
           ) : (
-            <Chip className="bg-transparent text-muted font-medium" role="status">{STATUS_LABEL[status]}</Chip>
+            <Chip className="bg-transparent text-muted font-medium" role="status">{t(STATUS_KEY[status])}</Chip>
           )}
-          <ExportMenu editor={editor} title={title} />
+          <ExportMenu editor={editor} title={displayTitle(title)} />
         </div>
       </header>
       <div className="no-print px-6 pb-3">

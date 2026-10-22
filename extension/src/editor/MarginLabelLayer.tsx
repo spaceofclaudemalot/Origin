@@ -3,7 +3,8 @@ import type { Editor } from "@tiptap/react";
 import type { AnalysisResult, GlobalSignal } from "../types/types";
 import { buildTextIndex, mapRanges } from "../analysis/positions";
 import { setSignalHighlight } from "./extensions/SignalHighlights";
-import { blockAnnotations, reconcileAnnotations, stackLabels, SIGNAL_SHORT, type BlockAnnotation } from "./marginLabels";
+import { blockAnnotations, reconcileAnnotations, stackLabels, signalShort, type BlockAnnotation } from "./marginLabels";
+import { t, tn, useLang } from "../i18n";
 
 const LABEL_HEIGHT = 22;
 const LABEL_GAP = 4;
@@ -32,18 +33,16 @@ interface Placed {
   labelTop: number;
 }
 
-const plural = (n: number) => (n > 1 ? "S" : "");
-
 function labelText(a: BlockAnnotation): string {
-  if (a.markerCount) return `${a.markerCount} MARQUEUR${plural(a.markerCount)}`;
+  if (a.markerCount) return tn("margin.markers", a.markerCount);
   const more = a.signals.length > 1 ? ` +${a.signals.length - 1}` : "";
-  return SIGNAL_SHORT[a.signals[0]] + more;
+  return signalShort(a.signals[0]) + more;
 }
 
 function ariaText(a: BlockAnnotation): string {
   const parts: string[] = [];
-  if (a.markerCount) parts.push(`${a.markerCount} marqueur${a.markerCount > 1 ? "s" : ""} dans ce paragraphe`);
-  if (a.signals.length) parts.push(`signal : ${a.signals.map((s) => SIGNAL_SHORT[s].toLowerCase()).join(", ")}`);
+  if (a.markerCount) parts.push(tn("margin.aria", a.markerCount));
+  if (a.signals.length) parts.push(t("margin.aria.signal", { names: a.signals.map((s) => signalShort(s).toLowerCase()).join(", ") }));
   return parts.join(", ");
 }
 
@@ -60,6 +59,7 @@ export const MarginLabels: React.FC<{
   highlighted: GlobalSignal["id"] | null;
   onFocus: (a: BlockAnnotation) => void;
 }> = ({ editor, result, sourceText, visible, highlighted, onFocus }) => {
+  useLang();
   const layer = useRef<HTMLDivElement>(null);
   const annotations = useRef<BlockAnnotation[]>([]);
   const owner = useRef<Editor | null>(null);
@@ -159,7 +159,7 @@ export const MarginLabels: React.FC<{
   };
 
   return (
-    <div ref={layer} className="no-print absolute inset-0 pointer-events-none" aria-label="Étiquettes d'analyse">
+    <div ref={layer} className="no-print absolute inset-0 pointer-events-none" aria-label={t("margin.layer")}>
       {focusIds.length > 0 && (
         <style>
           {focusIds.map((id) => `.to-marker[data-detection-id="${CSS.escape(id)}"]`).join(",") +

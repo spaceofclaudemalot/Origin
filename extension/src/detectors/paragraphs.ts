@@ -1,6 +1,7 @@
 import type { Detection, Detector, GlobalDetector, GlobalSignal, SignalFamily } from "../types/types";
 import type { Paragraph, Segmented } from "../analysis/segment";
-import { formatFr, mean, ramp, std } from "../analysis/stats";
+import { formatNum, mean, ramp, std } from "../analysis/stats";
+import { t } from "../i18n/core";
 import {
   PARAGRAPH_CV_AI, PARAGRAPH_CV_ALERT, PARAGRAPH_CV_HUMAN, PARAGRAPH_MIN_COUNT, PARAGRAPH_MIN_WORDS,
   TOPIC_AI, TOPIC_ALERT, TOPIC_HUMAN,
@@ -56,24 +57,23 @@ export class ParagraphDetector implements Detector, GlobalDetector {
       {
         id: "paragraph-uniformity",
         family: "regularity",
-        label: "Homogénéité des paragraphes",
+        label: t("para.uniform.label"),
         value: cv,
-        display: `CV = ${formatFr(cv)} (seuil ${formatFr(PARAGRAPH_CV_ALERT)})`,
+        display: t("para.uniform.display", { cv: formatNum(cv), threshold: formatNum(PARAGRAPH_CV_ALERT) }),
         score: insufficient ? 0 : ramp(cv, PARAGRAPH_CV_HUMAN, PARAGRAPH_CV_AI),
         status: insufficient ? "insufficient" : cv < PARAGRAPH_CV_ALERT ? "alert" : "ok",
-        explanation: "Des paragraphes de longueur presque identique trahissent une génération calibrée.",
+        explanation: t("para.uniform.why"),
         ranges: kept.map(({ start, end }) => ({ start, end })),
       },
       {
         id: "topic-sentences",
         family: "regularity",
-        label: "Phrases d'ouverture thématiques",
+        label: t("para.topic.label"),
         value: rate,
-        display: `${Math.round(rate * 100)} % des paragraphes (seuil ${Math.round(TOPIC_ALERT * 100)} %)`,
+        display: t("para.topic.display", { rate: Math.round(rate * 100), threshold: Math.round(TOPIC_ALERT * 100) }),
         score: insufficient ? 0 : ramp(rate, TOPIC_HUMAN, TOPIC_AI),
         status: insufficient ? "insufficient" : rate >= TOPIC_ALERT ? "alert" : "ok",
-        explanation:
-          "Indice approximatif : un LLM ouvre presque chaque paragraphe par une phrase qui annonce son thème (~94 % contre ~73 % chez l'humain).",
+        explanation: t("para.topic.why"),
         ranges: thematic.map((p) => seg.sentences[p.sentences[0]]).map(({ start, end }) => ({ start, end })),
       },
     ];

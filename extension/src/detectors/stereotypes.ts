@@ -1,6 +1,7 @@
 import type { Detection, Detector, SignalFamily } from "../types/types";
 import { TRIAD_MIN_COUNT, TRIAD_WEIGHT } from "../analysis/thresholds";
-import { HUMANIZER_EXPLANATION, HUMANIZER_PATTERNS, HUMANIZER_REMOVABLE, type HumanizerKind } from "./humanizer-patterns";
+import { HUMANIZER_PATTERNS, HUMANIZER_REMOVABLE, type HumanizerKind } from "./humanizer-patterns";
+import { t } from "../i18n/core";
 
 interface Pattern {
   kind: "parallel" | "conclusion" | "triad" | HumanizerKind;
@@ -54,12 +55,8 @@ const PATTERNS: Pattern[] = [
   ...HUMANIZER_PATTERNS,
 ];
 
-const EXPLANATION: Record<Pattern["kind"], string> = {
-  ...HUMANIZER_EXPLANATION,
-  parallel: "Parallélisme négatif (« ce n'est pas X, c'est Y ») : tournure très fréquente dans les textes générés par des LLM.",
-  conclusion: "Formule de conclusion enflée, typique des textes générés par des LLM.",
-  triad: "Énumération par trois répétée : rythme ternaire caractéristique des textes générés par des LLM.",
-};
+const explain = (kind: Pattern["kind"]): string =>
+  t(kind === "parallel" || kind === "conclusion" || kind === "triad" ? `stereo.${kind}` : `hp.${kind}`);
 
 export class StereotypeDetector implements Detector {
   readonly id = "stereotypes";
@@ -87,9 +84,9 @@ export class StereotypeDetector implements Detector {
           end,
           score: Math.round(p.confidence * 100),
           confidence: p.confidence,
-          explanation: EXPLANATION[p.kind],
+          explanation: explain(p.kind),
           suggestions: HUMANIZER_REMOVABLE.has(p.kind as HumanizerKind)
-            ? [{ type: "remove", text: "", reason: "Supprimer cette formule ; le reste de la phrase se suffit." }]
+            ? [{ type: "remove", text: "", reason: t("stereo.remove") }]
             : [],
           ...(p.kind === "triad" ? { weight: TRIAD_WEIGHT } : {}),
         });
