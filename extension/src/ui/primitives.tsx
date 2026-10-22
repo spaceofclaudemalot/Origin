@@ -2,6 +2,10 @@ import React, { useEffect, useId, useRef, useState } from "react";
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(" ");
 
+/** Retour au clic : transition courte sur les propriétés utiles, légère réduction à l'appui (pas sous reduced-motion). */
+const PRESSABLE =
+  "transition-[color,background-color,filter,transform,opacity] duration-150 ease-ui motion-safe:enabled:active:scale-[0.97]";
+
 const BUTTON_VARIANT = {
   primary: "bg-accent text-accent-ink hover:brightness-110 disabled:bg-line disabled:text-muted",
   secondary: "bg-raised border border-line text-ink hover:bg-surface disabled:opacity-50",
@@ -14,7 +18,8 @@ export const Button: React.FC<
   <button
     type={type}
     className={cx(
-      "inline-flex items-center justify-center gap-1.5 rounded-ctl font-semibold transition-colors disabled:cursor-not-allowed",
+      "inline-flex items-center justify-center gap-1.5 rounded-ctl font-semibold disabled:cursor-not-allowed",
+      PRESSABLE,
       size === "md" ? "h-9 px-4 text-[13px]" : "h-7 px-2.5 text-2xs",
       BUTTON_VARIANT[variant],
       className,
@@ -37,7 +42,8 @@ export const IconButton: React.FC<
       onMouseDown?.(e);
     }}
     className={cx(
-      "h-8 min-w-8 px-1.5 rounded-ctl inline-flex items-center justify-center text-[13px] transition-colors disabled:opacity-40",
+      "h-8 min-w-8 px-1.5 rounded-ctl inline-flex items-center justify-center text-[13px] disabled:opacity-40",
+      PRESSABLE,
       active ? "bg-ink/10 text-ink" : "text-ink hover:bg-surface",
       className,
     )}
@@ -60,7 +66,7 @@ export const Chip: React.FC<
   const classes = cx(
     "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-2xs font-semibold whitespace-nowrap",
     CHIP_TONE[tone],
-    as === "button" && "transition-[filter] hover:brightness-105",
+    as === "button" && ["hover:brightness-105", PRESSABLE].join(" "),
     className,
   );
   return as === "button"
@@ -121,11 +127,21 @@ export const Collapsible: React.FC<{
             {count}
           </span>
         )}
-        <svg viewBox="0 0 24 24" className={cx("w-4 h-4 transition-transform", isOpen && "rotate-180")} fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+        <svg viewBox="0 0 24 24" className={cx("w-4 h-4 transition-transform duration-200 ease-ui-move", isOpen && "rotate-180")} fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
           <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-      {isOpen && <div id={bodyId} className="pt-1.5">{children}</div>}
+      {/* Le contenu reste monté : la hauteur s'anime via grid-template-rows, `inert` retire le contenu replié du focus */}
+      <div
+        className={cx(
+          "grid transition-[grid-template-rows] duration-200 ease-ui-move motion-reduce:transition-none",
+          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div id={bodyId} inert={!isOpen} aria-hidden={!isOpen} className="min-h-0 overflow-hidden">
+          <div className="pt-1.5">{children}</div>
+        </div>
+      </div>
     </section>
   );
 };
@@ -191,7 +207,8 @@ export const Menu: React.FC<{
           role="menu"
           className={cx(
             "absolute top-full mt-1.5 z-40 min-w-44 bg-raised border border-line rounded-card shadow-lift p-1",
-            align === "right" ? "right-0" : "left-0",
+            "animate-pop-in motion-reduce:animate-fade-in",
+            align === "right" ? "right-0 origin-top-right" : "left-0 origin-top-left",
           )}
         >
           {children(close)}
