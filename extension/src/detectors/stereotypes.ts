@@ -1,8 +1,9 @@
 import type { Detection, Detector, SignalFamily } from "../types/types";
 import { TRIAD_MIN_COUNT, TRIAD_WEIGHT } from "../analysis/thresholds";
+import { HUMANIZER_EXPLANATION, HUMANIZER_PATTERNS, HUMANIZER_REMOVABLE, type HumanizerKind } from "./humanizer-patterns";
 
 interface Pattern {
-  kind: "parallel" | "conclusion" | "triad";
+  kind: "parallel" | "conclusion" | "triad" | HumanizerKind;
   regex: RegExp;
   confidence: number;
 }
@@ -50,9 +51,11 @@ const PATTERNS: Pattern[] = [
     regex: new RegExp(`(?<![\\p{L}])${ITEM}, ${ITEM},? (?:and|et) ${ITEM}(?![\\p{L}])`, "gu"),
     confidence: 0.4,
   },
+  ...HUMANIZER_PATTERNS,
 ];
 
 const EXPLANATION: Record<Pattern["kind"], string> = {
+  ...HUMANIZER_EXPLANATION,
   parallel: "Parallélisme négatif (« ce n'est pas X, c'est Y ») : tournure très fréquente dans les textes générés par des LLM.",
   conclusion: "Formule de conclusion enflée, typique des textes générés par des LLM.",
   triad: "Énumération par trois répétée : rythme ternaire caractéristique des textes générés par des LLM.",
@@ -85,7 +88,9 @@ export class StereotypeDetector implements Detector {
           score: Math.round(p.confidence * 100),
           confidence: p.confidence,
           explanation: EXPLANATION[p.kind],
-          suggestions: [],
+          suggestions: HUMANIZER_REMOVABLE.has(p.kind as HumanizerKind)
+            ? [{ type: "remove", text: "", reason: "Supprimer cette formule ; le reste de la phrase se suffit." }]
+            : [],
           ...(p.kind === "triad" ? { weight: TRIAD_WEIGHT } : {}),
         });
       }

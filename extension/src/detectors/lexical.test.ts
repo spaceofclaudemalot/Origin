@@ -87,6 +87,12 @@ describe("LexicalDetector", () => {
     expect(fr.map((d) => d.text)).toEqual(["pierre angulaire", "incontestablement"]);
   });
 
+  it("detects French holistique, tapisserie and paysage expressions, not bare paysage", async () => {
+    const fr = await detector.detect("Une approche holistique, une véritable tapisserie, dans le paysage numérique actuel.");
+    expect(fr.map((d) => d.text)).toEqual(["holistique", "tapisserie", "paysage numérique"]);
+    expect(await detector.detect("Un paysage de montagne dans les Alpes.")).toEqual([]);
+  });
+
   it("belongs to the vocabulary family", () => {
     expect(detector.family).toBe("vocabulary");
   });
@@ -106,7 +112,7 @@ describe("LexicalDetector offsets", () => {
     const [fr] = await detector.detect("Il est crucial de la cultiver au quotidien dans toute équipe.");
     expect(fr.suggestions.map((s) => s.text)).toEqual(["important", "décisif", "clé"]);
     const [en] = await detector.detect("It is crucial to keep the team aligned with the plan.");
-    expect(en.suggestions.map((s) => s.text)).toEqual(["important", "essential", "vital"]);
+    expect(en.suggestions.map((s) => s.text)).toEqual(["important", "necessary"]);
   });
 
   it("explications grammaticales, avec article", async () => {
