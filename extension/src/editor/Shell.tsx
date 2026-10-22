@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BP, layoutFor, readPrefs, writePrefs, type Layout, type LayoutPrefs } from "./layout";
-import { IAnalysis, IDocs, ILogo, IPlus } from "../ui/icons";
+import { IAnalysis, IDocs, ILogo, IMail, IPlus } from "../ui/icons";
+import { extensionContext, feedbackUrl } from "../ui/feedback";
 
 /** Disposition courante, tiroirs ouverts et bascules du rail. */
 export function useLayout() {
@@ -133,6 +134,15 @@ export const Shell: React.FC<{
         <RailButton label="Nouveau document" onClick={onNewDoc}>
           <IPlus />
         </RailButton>
+        {/* En bas du rail : ouvre le client mail avec un modèle (retour ou bug), sans joindre le texte analysé */}
+        <a
+          href={feedbackUrl(extensionContext())}
+          title="Envoyer un retour ou signaler un bug"
+          aria-label="Envoyer un retour ou signaler un bug"
+          className="mt-auto w-10 h-10 rounded-card inline-flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-[color,background-color,transform] duration-150 ease-ui motion-safe:active:scale-[0.97]"
+        >
+          <IMail />
+        </a>
       </nav>
 
       {layout.docs === "pinned" && (
