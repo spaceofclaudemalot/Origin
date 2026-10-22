@@ -1,7 +1,10 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 
 type ToastKind = "info" | "warning" | "error";
-interface ToastItem { id: number; message: string; kind: ToastKind }
+interface ToastItem { id: number; message: string; kind: ToastKind; leaving?: boolean }
+
+const VISIBLE_MS = 4000;
+const LEAVE_MS = 150;
 interface ToastApi { show(message: string, kind?: ToastKind): void }
 
 const ToastContext = createContext<ToastApi>({ show: () => {} });
@@ -19,7 +22,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const show = useCallback((message: string, kind: ToastKind = "info") => {
     const id = nextId.current++;
     setItems((list) => [...list, { id, message, kind }]);
-    setTimeout(() => setItems((list) => list.filter((t) => t.id !== id)), 4000);
+    // Sortie par le même chemin que l'entrée, puis retrait une fois l'animation jouée
+    setTimeout(() => {
+      setItems((list) => list.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+      setTimeout(() => setItems((list) => list.filter((t) => t.id !== id)), LEAVE_MS);
+    }, VISIBLE_MS);
   }, []);
 
   // Valeur stable : les effets qui dépendent de useToast() ne se relancent pas
@@ -30,7 +37,13 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {children}
       <div className="no-print fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2" aria-live="polite">
         {items.map((t) => (
-          <div key={t.id} role="status" className={`${KIND_CLASS[t.kind]} font-ui border text-[13px] px-4 py-2.5 rounded-card shadow-lift`}>
+          <div
+            key={t.id}
+            role="status"
+            className={`${KIND_CLASS[t.kind]} ${
+              t.leaving ? "animate-rise-out" : "animate-rise-in"
+            } motion-reduce:animate-fade-in font-ui border text-[13px] px-4 py-2.5 rounded-card shadow-lift`}
+          >
             {t.message}
           </div>
         ))}

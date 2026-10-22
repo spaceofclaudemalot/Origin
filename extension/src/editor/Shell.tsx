@@ -73,9 +73,11 @@ const Drawer: React.FC<{ side: "left" | "right"; label: string; onClose: () => v
   side, label, onClose, children,
 }) => (
   <div className="no-print fixed inset-0 z-40" role="dialog" aria-label={label} aria-modal="true">
-    <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+    <div className="absolute inset-0 bg-black/30 animate-fade-in" onClick={onClose} />
     <div
-      className={`absolute top-2 bottom-2 bg-surface rounded-shell shadow-lift overflow-auto ${
+      className={`absolute top-2 bottom-2 bg-surface rounded-shell shadow-lift overflow-auto motion-reduce:animate-fade-in ${
+        side === "left" ? "animate-slide-in-left" : "animate-slide-in-right"
+      } ${
         side === "left" ? "left-[72px] w-[280px] max-w-[calc(100vw-88px)]" : "right-2 w-[340px] max-w-[calc(100vw-88px)]"
       }`}
     >

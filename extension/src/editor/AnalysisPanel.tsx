@@ -269,7 +269,10 @@ export const AnalysisPanel: React.FC<{
                   </div>
                   {f.measurable && (
                     <div className="h-1.5 mt-1 bg-line rounded-full" aria-hidden="true">
-                      <div className="h-1.5 rounded-full bg-ink/70" style={{ width: `${f.score}%` }} />
+                      <div
+                        className="h-1.5 w-full origin-left rounded-full bg-ink/70 transition-transform duration-200 ease-ui motion-reduce:transition-none"
+                        style={{ transform: `scaleX(${f.score / 100})` }}
+                      />
                     </div>
                   )}
                 </li>

@@ -30,7 +30,7 @@ export const ScoreGauge: React.FC<{ score: number; size?: "lg" | "md"; caption?:
       </div>
       <div className="flex gap-1" aria-hidden="true">
         {BANDS.map((b) => (
-          <span key={b} className={`h-1.5 flex-1 rounded-full ${SEGMENT[b]} ${b === band ? "" : "opacity-30"}`} />
+          <span key={b} className={`h-1.5 flex-1 rounded-full transition-opacity duration-150 ease-ui ${SEGMENT[b]} ${b === band ? "" : "opacity-30"}`} />
         ))}
       </div>
       {caption && <div className="text-2xs text-muted">{caption}</div>}
