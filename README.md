@@ -59,4 +59,4 @@ Le bouton en forme d'enveloppe, en bas du rail de l'éditeur, ouvre votre client
 
 ## Licence
 
-Aucune licence n'est déclarée pour l'instant.
+[MIT](LICENSE) © 2026 Claude Malot. Le catalogue de motifs d'Humanizer, dont ce projet s'inspire, est lui aussi sous licence MIT.
