@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { wordCountOf, relativeDate, displayTitle } from "./docInfo";
 import { setLang } from "../i18n/core";
+import { countWordsIn } from "../analysis/segment";
 
 describe("displayTitle et dates selon la langue", () => {
   it("affiche le titre par défaut dans la langue courante, jamais un titre choisi", () => {
@@ -21,6 +22,15 @@ describe("displayTitle et dates selon la langue", () => {
 });
 
 const p = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] });
+
+describe("wordCountOf = mots du panneau d'analyse", () => {
+  it("compte comme le moteur : traits d'union et apostrophes", () => {
+    const text = "Banque-Assurance-Microfinance, full-remote, no-code et l'équipe d'aujourd'hui";
+    const doc = { type: "doc", content: [p(text)] };
+    expect(wordCountOf(doc)).toBe(countWordsIn(text));
+    expect(wordCountOf(doc)).toBe(10);
+  });
+});
 
 describe("wordCountOf", () => {
   it("vide / null", () => {

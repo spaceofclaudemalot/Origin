@@ -6,7 +6,8 @@ import { setSignalHighlight } from "./extensions/SignalHighlights";
 import { blockAnnotations, reconcileAnnotations, stackLabels, signalShort, type BlockAnnotation } from "./marginLabels";
 import { t, tn, useLang } from "../i18n";
 
-const LABEL_HEIGHT = 22;
+/** Hauteur supposée avant la première mesure ; la hauteur réelle de chaque étiquette est ensuite mesurée. */
+const LABEL_HEIGHT = 30;
 const LABEL_GAP = 4;
 /** Place minimale à gauche de la feuille pour sortir les étiquettes de la marge. */
 const GUTTER_MIN = 124;
@@ -65,6 +66,9 @@ export const MarginLabels: React.FC<{
   const owner = useRef<Editor | null>(null);
   const [version, setVersion] = useState(0);
   const [placed, setPlaced] = useState<Placed[]>([]);
+  // Hauteurs réelles des étiquettes (leur texte peut passer sur deux lignes, surtout en anglais)
+  const buttons = useRef(new Map<number, HTMLButtonElement>());
+  const heights = useRef(new Map<number, number>());
   const [gutter, setGutter] = useState(false);
   // Marqueurs du bloc survolé : règle CSS plutôt qu'une classe, que ProseMirror effacerait en redessinant
   const [focusIds, setFocusIds] = useState<string[]>([]);
@@ -118,9 +122,22 @@ export const MarginLabels: React.FC<{
       const r = dom.getBoundingClientRect();
       items.push({ a, top: r.top - box.top, height: r.height, left: r.left - box.left });
     }
-    const tops = stackLabels(items.map((i) => ({ top: i.top, height: LABEL_HEIGHT })), LABEL_GAP);
+    const tops = stackLabels(items.map((i) => ({ top: i.top, height: heights.current.get(i.a.pos) ?? LABEL_HEIGHT })), LABEL_GAP);
     setPlaced(items.map((i, k) => ({ ...i, labelTop: tops[k] })));
   }, [editor]);
+
+  // Après chaque rendu : si une étiquette n'a pas la hauteur supposée, on la mémorise et on réempile
+  useLayoutEffect(() => {
+    let changed = false;
+    for (const [pos, el] of buttons.current) {
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      if (h > 0 && heights.current.get(pos) !== h) {
+        heights.current.set(pos, h);
+        changed = true;
+      }
+    }
+    if (changed) return nextFrame(measure);
+  }, [placed, measure]);
 
   // Mesures groupées dans une frame après chaque changement
   useLayoutEffect(() => nextFrame(measure), [measure, version, visible]);
@@ -175,6 +192,10 @@ export const MarginLabels: React.FC<{
               <span className={`absolute w-[3px] rounded-full ${bar}`} style={{ top, height, left: left - 12 }} aria-hidden="true" />
               <button
                 type="button"
+                ref={(el) => {
+                  if (el) buttons.current.set(a.pos, el);
+                  else buttons.current.delete(a.pos);
+                }}
                 aria-label={ariaText(a)}
                 title={ariaText(a)}
                 onMouseEnter={() => enter(a)}
@@ -182,7 +203,7 @@ export const MarginLabels: React.FC<{
                 onFocus={() => enter(a)}
                 onBlur={() => leave(a)}
                 onClick={() => onFocus(a)}
-                className={`pointer-events-auto absolute flex items-center gap-1 font-ui text-[9px] font-bold tracking-wide leading-tight rounded-md px-1.5 py-1 shadow-soft text-left hover:brightness-110 ${
+                className={`pointer-events-auto absolute flex items-center gap-1 font-ui text-[11px] font-bold tracking-wide leading-tight break-words rounded-md px-1.5 py-1 shadow-soft text-left hover:brightness-110 ${
                   markers ? `${LEVEL_BG[a.maxLevel ?? "low"]} text-accent-ink` : "bg-rail text-white"
                 }`}
                 style={
